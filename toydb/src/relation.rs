@@ -1,4 +1,4 @@
-use crate::Identifiable;
+use crate::Model;
 
 /// A relation (think of it as a table in RDBMS).
 /// Provides simple methods for CRUD operations.
@@ -9,13 +9,14 @@ use crate::Identifiable;
 /// * Updating a record which does not exist.
 ///
 /// At some points those panics may be replaced with returned errors.
-pub struct Relation<'a, R: Identifiable + Clone> {
+pub struct Relation<'a, R: Model + Clone> {
+    /// This could be BTreeSet or HashMap to make things slightly faster, but but who cares?.
     records: &'a mut Vec<R>,
 }
 
 impl<'a, R> Relation<'a, R>
 where
-    R: Identifiable + Clone,
+    R: Model + Clone,
 {
     pub fn new(records: &'a mut Vec<R>) -> Self {
         Self { records }
@@ -28,7 +29,7 @@ where
         let found_record = self.records.iter().find(|r| r.id() == id);
         if found_record.is_some() {
             let typ = base_type_name::<R>();
-            panic!("Cannot insert {typ} (id={id}), because a record with this ID already exists");
+            panic!("Cannot insert {typ} (id={id:?}), because a record with this ID already exists");
         }
         self.records.push(new_record);
     }
@@ -45,7 +46,7 @@ where
         self.records.clone()
     }
 
-    pub fn get_by_id(&self, id: <R as Identifiable>::Id) -> Option<R> {
+    pub fn get_by_id(&self, id: <R as Model>::Id) -> Option<R> {
         self.records.iter().find(|r| r.id() == id).cloned()
     }
 
@@ -60,7 +61,7 @@ where
             .find(|r| r.id() == id)
             .unwrap_or_else(|| {
                 let typ = base_type_name::<R>();
-                panic!(".update() failed, because {typ} (id={id}) does not exist");
+                panic!(".update() failed, because {typ} (id={id:?}) does not exist");
             });
 
         let new_ref = &mut new_record;
@@ -69,14 +70,14 @@ where
 
     // Delete
     //
-    pub fn delete(&mut self, id: <R as Identifiable>::Id) {
+    pub fn delete(&mut self, id: <R as Model>::Id) {
         let index = self
             .records
             .iter()
             .position(|r| r.id() == id)
             .unwrap_or_else(|| {
                 let typ = base_type_name::<R>();
-                panic!(".delete() failed: could not find {typ} (id={id})");
+                panic!(".delete() failed: could not find {typ} (id={id:?})");
             });
         self.records.remove(index);
     }
@@ -90,15 +91,23 @@ fn base_type_name<T>() -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::{Deserialize, Serialize};
 
-    use crate::impl_identifiable;
+    use crate::Model;
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     struct User {
         id: i32,
         name: String,
     }
-    impl_identifiable!(User, i32);
+
+    impl Model for User {
+        type Id = i32;
+
+        fn id(&self) -> Self::Id {
+            self.id
+        }
+    }
 
     fn bob() -> User {
         User {

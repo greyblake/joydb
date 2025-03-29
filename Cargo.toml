@@ -1,6 +1,8 @@
 [workspace]
+resolver = "3"
 
 members = [
     "toydb",
+    "toydb_macros",
     "dummy",
 ]
