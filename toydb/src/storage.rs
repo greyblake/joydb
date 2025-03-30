@@ -28,8 +28,9 @@ macro_rules! define_storage {
         //
         impl $storage_name {
             /// Try to load a database from the give file path.
-            /// If file does not exist yet, then a new empty database will be used with this file path.
-            pub fn load_or_new(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ::toydb::StorageError> {
+            /// If file does not exist yet, then create a new one.
+            /// TODO: Rename to `open`!
+            pub fn load_or_create(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ::toydb::StorageError> {
                 let file_path = file_path.into();
                 let path = ::std::path::Path::new(&file_path);
                 if path.exists() {
@@ -39,7 +40,7 @@ macro_rules! define_storage {
                         Err(::toydb::StorageError::NotFile(file_path))
                     }
                 } else {
-                    Ok(Self::new(file_path))
+                    Self::create(file_path)
                 }
             }
 
@@ -47,6 +48,12 @@ macro_rules! define_storage {
                 let content = ::serde_json::to_string_pretty(&self.state)?;
                 ::std::fs::write(&self.file_path, content)?;
                 Ok(())
+            }
+
+            fn create(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ::toydb::StorageError> {
+                let db = Self::new(file_path);
+                db.flush()?;
+                Ok(db)
             }
 
             fn new(file_path: impl Into<::std::path::PathBuf>) -> Self {

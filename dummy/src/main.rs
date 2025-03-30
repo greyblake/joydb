@@ -19,16 +19,36 @@ toydb::define_storage! {
     posts: Post,
 }
 
+const DB_FILE: &str = "dummy.json";
+
 fn main() {
-    let mut db = Db::load_or_new("toydb.json").unwrap();
+    // Delete the file if it exists
+    std::fs::remove_file(DB_FILE).ok();
 
-    db.users().insert(User {
-        id: 1,
-        name: "Alice".to_owned(),
-    });
+    // Insert some data
+    {
+        let mut db = Db::load_or_create(DB_FILE).unwrap();
 
-    db.posts().insert(Post {
-        id: 1,
-        title: "Hello, world!".to_owned(),
-    });
+        db.users().insert(User {
+            id: 1,
+            name: "Alice".to_owned(),
+        });
+        db.users().insert(User {
+            id: 2,
+            name: "Bob".to_owned(),
+        });
+
+        db.posts().insert(Post {
+            id: 1,
+            title: "Hello, world!".to_owned(),
+        });
+        // NOTE: DB is flushed automatically on drop
+    }
+
+    // Load the data back
+    {
+        let mut db = Db::load_or_create(DB_FILE).unwrap();
+        let alice = db.users().get_by_id(1).unwrap();
+        assert_eq!(alice.name, "Alice");
+    }
 }
