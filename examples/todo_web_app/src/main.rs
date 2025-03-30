@@ -6,20 +6,19 @@ use axum::{
 };
 use maud::{html, Markup, PreEscaped};
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
-use toydb::{define_storage, Model};
+use toydb::{Toydb, define_state, Model};
 use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
-    let app_state = AppState::init();
+    let db = Db::open(DB_PATH).unwrap();
 
     // Create an Axum router with routes
     let app = Router::new()
         .route("/", get(index))
         .route("/todos", post(add_todo))
         .route("/todos/{id}/toggle", post(toggle_todo))
-        .with_state(app_state.clone());
+        .with_state(db.clone());
 
     // Start the server
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -29,70 +28,9 @@ async fn main() {
     println!("Server running at http://{}", listener.local_addr().unwrap());
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal(app_state.clone()))
+        .with_graceful_shutdown(shutdown_signal(db))
         .await
         .unwrap();
-}
-
-// Handler for the index page
-async fn index(State(state): State<AppState>) -> impl IntoResponse {
-    let mut db = state.db.lock().unwrap();
-    let todos = db.todos().get_all();
-
-    let pending_todos: Vec<_> = todos.iter().filter(|t| !t.completed).cloned().collect();
-    let completed_todos: Vec<_> = todos.iter().filter(|t| t.completed).cloned().collect();
-
-    Html(render_page(&pending_todos, &completed_todos).into_string())
-}
-
-// Handler for adding a new todo
-async fn add_todo(
-    State(state): State<AppState>,
-    Form(new_todo): Form<NewTodo>,
-) -> impl IntoResponse {
-    //let mut db = state.db.lock().unwrap();
-    db.todos().insert(Todo {
-        id: Uuid::new_v4(),
-        name: new_todo.name,
-        completed: false,
-    });
-
-    axum::response::Redirect::to("/")
-}
-
-// Handler for toggling todo completion status
-async fn toggle_todo(
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-) -> impl IntoResponse {
-    let mut db = state.db.lock().unwrap();
-    if let Some(mut todo) = db.todos().get_by_id(id) {
-        todo.completed = !todo.completed;
-        db.todos().update(todo);
-    }
-
-    axum::response::Redirect::to("/")
-}
-
-#[derive(Clone)]
-struct AppState {
-    db: Arc<Mutex<Db>>,
-}
-
-impl AppState {
-    fn init() -> Self {
-        let db = Db::open(DB_PATH).unwrap();
-        Self {
-            db: Arc::new(Mutex::new(db)),
-        }
-    }
-}
-
-// Shutdown signal handler
-async fn shutdown_signal(_app_state: AppState) {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to listen for Ctrl+C signal");
 }
 
 // --- STORAGE ---
@@ -111,10 +49,61 @@ struct NewTodo {
     name: String,
 }
 
-define_storage! {
-    Db,
+define_state! {
+    DbState,
     todos: Todo,
 }
+
+type Db = Toydb<DbState>;
+
+
+// --- HANDLERS ---
+
+// Handler for the index page
+async fn index(State(db): State<Db>) -> impl IntoResponse {
+    let todos = db.all::<Todo>();
+
+    let pending_todos: Vec<_> = todos.iter().filter(|t| !t.completed).cloned().collect();
+    let completed_todos: Vec<_> = todos.iter().filter(|t| t.completed).cloned().collect();
+
+    Html(render_page(&pending_todos, &completed_todos).into_string())
+}
+
+// Handler for adding a new todo
+async fn add_todo(
+    State(db): State<Db>,
+    Form(new_todo): Form<NewTodo>,
+) -> impl IntoResponse {
+    db.insert(Todo {
+        id: Uuid::new_v4(),
+        name: new_todo.name,
+        completed: false,
+    });
+
+    axum::response::Redirect::to("/")
+}
+
+// Handler for toggling todo completion status
+async fn toggle_todo(
+    State(db): State<Db>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    if let Some(mut todo) = db.find::<Todo>(&id) {
+        todo.completed = !todo.completed;
+        db.update(todo);
+    }
+
+    axum::response::Redirect::to("/")
+}
+
+
+// Shutdown signal handler
+async fn shutdown_signal(_db: Db) {
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to listen for Ctrl+C signal");
+}
+
 
 // --- TEMPLATES ---
 

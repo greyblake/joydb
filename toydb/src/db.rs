@@ -5,9 +5,19 @@ use crate::traits::{Model, GetRelation};
 use serde::{de::DeserializeOwned, Serialize};
 use crate::StorageError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Toydb<State: Default + Debug + Serialize + DeserializeOwned> {
     inner: Arc<Mutex<InnerToydb<State>>>,
+}
+
+// Implement `Clone` manually, otherwise the compile requires a `State: Clone` bound.
+// But we deliberately don't want to be the inner state to implement `Clone`.
+impl<State: Default + Debug + Serialize + DeserializeOwned> Clone for Toydb<State> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
 }
 
 impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
@@ -41,6 +51,18 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
         let relation = <State as GetRelation<M>>::get_rel(state);
 
         relation.iter().find(|m| m.id() == id).cloned()
+    }
+
+    pub fn all<M: Model>(&self) -> Vec<M>
+    where
+        M: Clone,
+        State: GetRelation<M>,
+    {
+        let inner = self.inner.lock().unwrap();
+        let state = &inner.state;
+        let relation = <State as GetRelation<M>>::get_rel(state);
+
+        relation.iter().cloned().collect()
     }
 
     pub fn update<M: Model>(&self, new_model: M)
@@ -83,7 +105,6 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     //
     // Getters:
     // - find_all_by(predicate) -> Vec<M>
-    // - all() -> Vec<M>
 }
 
 #[derive(Debug)]
