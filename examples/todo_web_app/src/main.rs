@@ -1,16 +1,24 @@
-use axum::{routing::get, Router, extract::State};
-use toydb::{Model, define_storage};
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
+use axum::{
+    extract::{Form, Path, State},
+    response::{Html, IntoResponse},
+    routing::{get, post},
+    Router,
+};
+use maud::{html, Markup, PreEscaped};
+use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
+use toydb::{define_storage, Model};
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
     let app_state = AppState::init();
 
-    // Create an Axum router with one route
+    // Create an Axum router with routes
     let app = Router::new()
-        .route("/", get(hello_world))
+        .route("/", get(index))
+        .route("/todos", post(add_todo))
+        .route("/todos/{id}/toggle", post(toggle_todo))
         .with_state(app_state.clone());
 
     // Start the server
@@ -26,25 +34,44 @@ async fn main() {
         .unwrap();
 }
 
-// Simple handler function returning a plain text response
-async fn hello_world(
-    State(AppState { db }): State<AppState>,
-) -> String {
-    let mut db = db.lock().unwrap();
+// Handler for the index page
+async fn index(State(state): State<AppState>) -> impl IntoResponse {
+    let mut db = state.db.lock().unwrap();
+    let todos = db.todos().get_all();
+
+    let pending_todos: Vec<_> = todos.iter().filter(|t| !t.completed).cloned().collect();
+    let completed_todos: Vec<_> = todos.iter().filter(|t| t.completed).cloned().collect();
+
+    Html(render_page(&pending_todos, &completed_todos).into_string())
+}
+
+// Handler for adding a new todo
+async fn add_todo(
+    State(state): State<AppState>,
+    Form(new_todo): Form<NewTodo>,
+) -> impl IntoResponse {
+    let mut db = state.db.lock().unwrap();
     db.todos().insert(Todo {
-        id: TodoId(Uuid::new_v4()),
-        name: "Hello, World!".to_string(),
+        id: Uuid::new_v4(),
+        name: new_todo.name,
         completed: false,
     });
 
+    axum::response::Redirect::to("/")
+}
 
-    let todos = db.todos().get_all();
+// Handler for toggling todo completion status
+async fn toggle_todo(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    let mut db = state.db.lock().unwrap();
+    if let Some(mut todo) = db.todos().get_by_id(id) {
+        todo.completed = !todo.completed;
+        db.todos().update(todo);
+    }
 
-    todos.iter().
-        map(|todo|  {
-            let Todo { id, name, completed } = todo;
-            format!("{}: {} ({})", id.0, name, completed)
-        }).collect::<Vec<_>>().join("\n")
+    axum::response::Redirect::to("/")
 }
 
 #[derive(Clone)]
@@ -61,34 +88,107 @@ impl AppState {
     }
 }
 
-
-// When this function returns, Axum will gracefully shut down,
-// and `Drop` implementations (if any) will execute normally.
-// Which make DB to flush to disk
-async fn shutdown_signal(app_state: AppState) {
+// Shutdown signal handler
+async fn shutdown_signal(_app_state: AppState) {
     tokio::signal::ctrl_c()
         .await
         .expect("Failed to listen for Ctrl+C signal");
 }
 
-
-
 // --- STORAGE ---
 
 const DB_PATH: &str = "db.json";
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-struct TodoId(Uuid);
-
 #[derive(Debug, Serialize, Deserialize, Clone, Model)]
 struct Todo {
-    id: TodoId,
+    id: Uuid,
     name: String,
     completed: bool,
 }
 
+#[derive(Debug, Deserialize)]
+struct NewTodo {
+    name: String,
+}
 
 define_storage! {
     Db,
     todos: Todo,
+}
+
+// --- TEMPLATES ---
+
+fn render_page(pending_todos: &[Todo], completed_todos: &[Todo]) -> Markup {
+    html! {
+        (PreEscaped("<!DOCTYPE html>"))
+        html lang="en" {
+            head {
+                meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
+                title { "Todo App" }
+                script src="https://cdn.tailwindcss.com" {}
+            }
+            body class="bg-gray-100" {
+                div class="max-w-md mx-auto p-6" {
+                    h1 class="text-2xl font-bold mb-6 text-center" { "Todo App" }
+
+                    // Add todo form
+                    form class="mb-8" method="POST" action="/todos" {
+                        div class="flex gap-2" {
+                            input
+                                type="text"
+                                name="name"
+                                placeholder="What needs to be done?"
+                                class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
+                            button
+                                type="submit"
+                                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500" {
+                                "Add"
+                            }
+                        }
+                    }
+
+                    // Pending todos section
+                    h2 class="text-xl font-semibold mb-2" { "Pending" }
+                    ul class="mb-6 space-y-2" {
+                        @for todo in pending_todos {
+                            li class="flex items-center justify-between p-3 bg-white rounded-lg shadow" {
+                                span { (todo.name) }
+                                form method="POST" action=(format!("/todos/{}/toggle", todo.id)) {
+                                    button
+                                        type="submit"
+                                        class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600" {
+                                        "Complete"
+                                    }
+                                }
+                            }
+                        }
+                        @if pending_todos.is_empty() {
+                            li class="text-gray-500 italic" { "No pending tasks" }
+                        }
+                    }
+
+                    // Completed todos section
+                    h2 class="text-xl font-semibold mb-2" { "Completed" }
+                    ul class="space-y-2" {
+                        @for todo in completed_todos {
+                            li class="flex items-center justify-between p-3 bg-white rounded-lg shadow opacity-75" {
+                                span class="line-through" { (todo.name) }
+                                form method="POST" action=(format!("/todos/{}/toggle", todo.id)) {
+                                    button
+                                        type="submit"
+                                        class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600" {
+                                        "Undo"
+                                    }
+                                }
+                            }
+                        }
+                        @if completed_todos.is_empty() {
+                            li class="text-gray-500 italic" { "No completed tasks" }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
