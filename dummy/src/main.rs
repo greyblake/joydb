@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::Model;
+use toydb::{Toydb, Model};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {
@@ -13,11 +13,13 @@ struct Post {
     title: String,
 }
 
-toydb::define_storage! {
-    Db,
+toydb::define_state! {
+    AppState,
     users: User,
     posts: Post,
 }
+
+type Db = Toydb<AppState>;
 
 const DB_FILE: &str = "dummy.json";
 
@@ -27,28 +29,30 @@ fn main() {
 
     // Insert some data
     {
-        let mut db = Db::open(DB_FILE).unwrap();
+        let db = Db::open(DB_FILE).unwrap();
 
-        db.users().insert(User {
+        db.insert(User {
             id: 1,
             name: "Alice".to_owned(),
         });
-        db.users().insert(User {
+        db.insert(User {
             id: 2,
             name: "Bob".to_owned(),
         });
 
-        db.posts().insert(Post {
+        db.insert(Post {
             id: 1,
             title: "Hello, world!".to_owned(),
         });
-        // NOTE: DB is flushed automatically on drop
+        // DB is flushed automatically on drop
     }
 
     // Load the data back
     {
-        let mut db = Db::open(DB_FILE).unwrap();
-        let alice = db.users().get_by_id(1).unwrap();
+        let db = Db::open(DB_FILE).unwrap();
+        let alice: User = db.find(&1).unwrap();
         assert_eq!(alice.name, "Alice");
+
+        db.delete::<Post>(&2);
     }
 }

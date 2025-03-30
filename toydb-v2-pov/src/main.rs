@@ -2,16 +2,17 @@ use std::{path::PathBuf, sync::{Arc, Mutex}};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
-struct Db {
-    inner: Arc<Mutex<InnerDb>>,
+struct Toydb<State: Default + Debug> {
+    inner: Arc<Mutex<InnerToydb<State>>>,
 }
 
-impl Db {
+impl<State: Default + Debug> Toydb<State> {
     fn new(file_path: impl Into<PathBuf>) -> Self {
-        let state = DbState::default();
-        let inner = InnerDb {
+        let state = State::default();
+        let inner = InnerToydb {
             file_path: file_path.into(),
             state,
+            dirty_changes_count: 0,
         };
         let inner = Arc::new(Mutex::new(inner));
         Self { inner }
@@ -19,34 +20,62 @@ impl Db {
 
     fn insert<M: Model>(&self, model: M)
     where
-        DbState: GetRelation<M>,
+        State: GetRelation<M>,
     {
         let mut inner = self.inner.lock().unwrap();
         let state = &mut inner.state;
-        let relation = <DbState as GetRelation<M>>::get_rel_mut(state);
+        let relation = <State as GetRelation<M>>::get_rel_mut(state);
         relation.push(model);
+        inner.dirty_changes_count += 1;
     }
 
     fn find<M: Model>(&self, id: &M::Id) -> Option<M>
     where
         M: Clone,
-        DbState: GetRelation<M>,
+        State: GetRelation<M>,
     {
         let inner = self.inner.lock().unwrap();
         let state = &inner.state;
-        let relation = <DbState as GetRelation<M>>::get_rel(state);
+        let relation = <State as GetRelation<M>>::get_rel(state);
         relation.iter().find(|m| m.id() == id).cloned()
     }
+
+    fn update<M: Model>(&self, new_model: M)
+    where
+        State: GetRelation<M>,
+    {
+        let mut inner = self.inner.lock().unwrap();
+        let state = &mut inner.state;
+        let relation = <State as GetRelation<M>>::get_rel_mut(state);
+        let id = new_model.id();
+        if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
+            *m = new_model;
+        } else {
+            // TODO: Return error?
+            panic!("Model {} not found by id = {:?}", std::any::type_name::<M>(), id);
+        }
+        inner.dirty_changes_count += 1;
+    }
+
+    // TODO:
+    // - delete(&id) -> Option<M>
+    //
+    // Getters:
+    // - find_all_by(predicate) -> Vec<M>
+    // - all() -> Vec<M>
+
 }
 
 #[derive(Debug)]
-struct InnerDb {
+struct InnerToydb<State: Default + Debug> {
     file_path: PathBuf,
-    state: DbState,
+    state: State,
+    dirty_changes_count: u64,
 }
 
 #[derive(Debug, Default)]
-struct DbState {
+struct AppState {
+    // TODO: For serde, load empty if property is missing
     users: Vec<User>,
     posts: Vec<Post>,
 }
@@ -61,7 +90,7 @@ trait GetRelation<M: Model> {
     fn get_rel(&self) -> &Vec<M>;
 }
 
-impl GetRelation<User> for DbState {
+impl GetRelation<User> for AppState {
     fn get_rel_mut(&mut self) -> &mut Vec<User> {
         &mut self.users
     }
@@ -71,7 +100,7 @@ impl GetRelation<User> for DbState {
     }
 }
 
-impl GetRelation<Post> for DbState {
+impl GetRelation<Post> for AppState {
     fn get_rel_mut(&mut self) -> &mut Vec<Post> {
         &mut self.posts
     }
@@ -80,12 +109,6 @@ impl GetRelation<Post> for DbState {
         &self.posts
     }
 }
-
-// impl GetRelation<Comment> for DbState {
-//     fn relation(&mut self) -> &mut Vec<Comment> {
-//         unimplemented!()
-//     }
-// }
 
 
 pub trait Model: Clone {
@@ -136,11 +159,27 @@ impl Model for Comment {
     }
 }
 
+
+// State type
+// List of model types
+// define_toydb! {
+//     AppState { User, Post, Comment, }
+// }
+
+type AppDb = Toydb<AppState>;
+
 fn main() {
-    let db = Db::new("db.json");
+    let db = AppDb::new("db.json");
     db.insert(User { id: 1, name: "Alice".to_string() });
     db.insert(Post { id: "1".to_string(), title: "Hello".to_string() });
     // db.insert(Comment { id: 1, body: "Nice post".to_string() });
 
     let user: User = db.find(&1).unwrap();
+    assert_eq!(user.name, "Alice");
+
+    db.update(User { id: 1, name: "Former Alice".to_string() });
+    assert_eq!(db.find::<User>(&1).unwrap().name, "Former Alice");
+
+
+    // let users = db.all::<User>();
 }
