@@ -29,8 +29,7 @@ macro_rules! define_storage {
         impl $storage_name {
             /// Try to load a database from the give file path.
             /// If file does not exist yet, then create a new one.
-            /// TODO: Rename to `open`!
-            pub fn load_or_create(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ::toydb::StorageError> {
+            pub fn open(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ::toydb::StorageError> {
                 let file_path = file_path.into();
                 let path = ::std::path::Path::new(&file_path);
                 if path.exists() {

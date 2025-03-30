@@ -50,7 +50,7 @@ async fn add_todo(
     State(state): State<AppState>,
     Form(new_todo): Form<NewTodo>,
 ) -> impl IntoResponse {
-    let mut db = state.db.lock().unwrap();
+    //let mut db = state.db.lock().unwrap();
     db.todos().insert(Todo {
         id: Uuid::new_v4(),
         name: new_todo.name,
@@ -81,7 +81,7 @@ struct AppState {
 
 impl AppState {
     fn init() -> Self {
-        let db = Db::load_or_create(DB_PATH).unwrap();
+        let db = Db::open(DB_PATH).unwrap();
         Self {
             db: Arc::new(Mutex::new(db)),
         }

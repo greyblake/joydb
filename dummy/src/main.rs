@@ -27,7 +27,7 @@ fn main() {
 
     // Insert some data
     {
-        let mut db = Db::load_or_create(DB_FILE).unwrap();
+        let mut db = Db::open(DB_FILE).unwrap();
 
         db.users().insert(User {
             id: 1,
@@ -47,7 +47,7 @@ fn main() {
 
     // Load the data back
     {
-        let mut db = Db::load_or_create(DB_FILE).unwrap();
+        let mut db = Db::open(DB_FILE).unwrap();
         let alice = db.users().get_by_id(1).unwrap();
         assert_eq!(alice.name, "Alice");
     }
