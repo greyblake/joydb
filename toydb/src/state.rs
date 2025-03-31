@@ -9,7 +9,7 @@ macro_rules! define_state {
         /// A struct that holds the data and can be (de)serialized to/from JSON.
         #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
         #[serde(default)]
-        struct $state_type {
+        pub struct $state_type {
             $(
                 $plural: Vec<$model_type>
             ),+

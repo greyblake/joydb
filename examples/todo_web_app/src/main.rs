@@ -1,12 +1,12 @@
 use axum::{
+    Router,
     extract::{Form, Path, State},
     response::{Html, IntoResponse},
     routing::{get, post},
-    Router,
 };
-use maud::{html, Markup, PreEscaped};
+use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
-use toydb::{Toydb, define_state, Model};
+use toydb::{Model, Toydb, define_state};
 use uuid::Uuid;
 
 #[tokio::main]
@@ -25,7 +25,10 @@ async fn main() {
         .await
         .unwrap();
 
-    println!("Server running at http://{}", listener.local_addr().unwrap());
+    println!(
+        "Server running at http://{}",
+        listener.local_addr().unwrap()
+    );
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal(db))
@@ -56,7 +59,6 @@ define_state! {
 
 type Db = Toydb<DbState>;
 
-
 // --- HANDLERS ---
 
 // Handler for the index page
@@ -70,10 +72,7 @@ async fn index(State(db): State<Db>) -> impl IntoResponse {
 }
 
 // Handler for adding a new todo
-async fn add_todo(
-    State(db): State<Db>,
-    Form(new_todo): Form<NewTodo>,
-) -> impl IntoResponse {
+async fn add_todo(State(db): State<Db>, Form(new_todo): Form<NewTodo>) -> impl IntoResponse {
     db.insert(Todo {
         id: Uuid::new_v4(),
         name: new_todo.name,
@@ -84,10 +83,7 @@ async fn add_todo(
 }
 
 // Handler for toggling todo completion status
-async fn toggle_todo(
-    State(db): State<Db>,
-    Path(id): Path<Uuid>,
-) -> impl IntoResponse {
+async fn toggle_todo(State(db): State<Db>, Path(id): Path<Uuid>) -> impl IntoResponse {
     if let Some(mut todo) = db.find::<Todo>(&id) {
         todo.completed = !todo.completed;
         db.update(todo);
@@ -96,14 +92,12 @@ async fn toggle_todo(
     axum::response::Redirect::to("/")
 }
 
-
 // Shutdown signal handler
 async fn shutdown_signal(_db: Db) {
     tokio::signal::ctrl_c()
         .await
         .expect("Failed to listen for Ctrl+C signal");
 }
-
 
 // --- TEMPLATES ---
 

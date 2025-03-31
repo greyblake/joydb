@@ -1,0 +1,37 @@
+
+### Flushing
+- [ ] Spawn a separate thread on `open` to flush database with some interval
+  -  The thread should own a weak ref (see `Arc::downgrade`)
+
+
+### CRUD methods:
+- [ ] find_all_by(predicate) -> Vec<M>
+- [ ] find_by(predicate) -> Option<M>
+- [ ] delete_all_by(predicate) -> Vec<M>
+- [ ] upsert
+
+
+### Improvements
+- [ ] Finalize naming of the methods
+- [ ] Rename `GetRelation` to something else?
+
+
+### Setup CI
+- [ ] On github
+
+
+### Documentation
+- [ ] Documentation for every public item
+- [ ] Documentation in lib.rs
+- [ ] Documentation in README
+- [ ] Proper Cargo.toml: description, tags, keywords, etc.
+- [ ] Come with a logo (see ideas https://chatgpt.com/c/67eab5c4-682c-800c-ad29-7d144b337bb9)
+
+### Further ideas
+
+- [ ] In memory only?
+
+
+- Rename? (e.g. `playdb`, `loldb`, `jokedb`, `joydb`)
+
+

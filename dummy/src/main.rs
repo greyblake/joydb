@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{Toydb, Model};
+use toydb::{Model, Toydb};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {
@@ -34,16 +34,19 @@ fn main() {
         db.insert(User {
             id: 1,
             name: "Alice".to_owned(),
-        });
+        })
+        .unwrap();
         db.insert(User {
             id: 2,
             name: "Bob".to_owned(),
-        });
+        })
+        .unwrap();
 
         db.insert(Post {
             id: 1,
             title: "Hello, world!".to_owned(),
-        });
+        })
+        .unwrap();
         // DB is flushed automatically on drop
     }
 

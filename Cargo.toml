@@ -4,5 +4,7 @@ resolver = "3"
 members = [
     "toydb",
     "toydb_macros",
-    "dummy", "examples/todo_web_app", "toydb-v2-pov",
+    "dummy",
+    "examples/todo_web_app",
+    "test_suite",
 ]

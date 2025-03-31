@@ -1,0 +1,9 @@
+[package]
+name = "test_suite"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = { version = "1.0.219", features = ["derive"] }
+toydb = { path = "../toydb" }
+uuid = { version = "1.16.0", features = ["v4", "serde"] }

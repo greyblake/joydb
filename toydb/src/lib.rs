@@ -1,11 +1,10 @@
-mod storage;
-mod storage_error;
-mod traits;
 mod db;
+mod error;
 mod state;
+mod traits;
 
-pub use storage_error::StorageError;
-pub use traits::{Model, GetRelation};
 pub use db::Toydb;
+pub use error::ToydbError;
+pub use traits::{GetRelation, Model};
 
 pub use toydb_macros::Model;

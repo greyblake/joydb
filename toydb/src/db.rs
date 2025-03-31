@@ -1,10 +1,25 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}};
+use crate::ToydbError;
+use crate::traits::{GetRelation, Model};
+use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 use std::ops::Drop;
-use crate::traits::{Model, GetRelation};
-use serde::{de::DeserializeOwned, Serialize};
-use crate::StorageError;
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
+/// A struct that represents a database.
+/// It's thread-safe and can be shared between multiple threads.
+///
+/// # CRUD operations
+///
+/// | Operation | Methods                                                          |
+/// |-----------|------------------------------------------------------------------|
+/// | Create    | [`insert`](Self::insert)                                         |
+/// | Read      | [`find`](Self::find), [`all`](Self::all), [`count`](Self::count) |
+/// | Update    | [`update`](Self::update)                                         |
+/// | Delete    | [`delete`](Self::delete)                                         |
+///
 #[derive(Debug)]
 pub struct Toydb<State: Default + Debug + Serialize + DeserializeOwned> {
     inner: Arc<Mutex<InnerToydb<State>>>,
@@ -21,7 +36,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Clone for Toydb<Stat
 }
 
 impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
-    pub fn open(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, StorageError> {
+    pub fn open(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ToydbError> {
         let file_path = file_path.into();
         let inner = InnerToydb::open(file_path)?;
         Ok(Self {
@@ -29,7 +44,18 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
         })
     }
 
-    pub fn insert<M: Model>(&self, model: M)
+    /// Inserts a new record.
+    /// Returns the inserted record.
+    ///
+    /// # Errors
+    /// Returns an error if the record with the same id already exists.
+    ///
+    /// # Complexity
+    /// O(n)
+    ///
+    /// # Example
+    /// TODO
+    pub fn insert<M: Model>(&self, model: M) -> Result<M, ToydbError>
     where
         State: GetRelation<M>,
     {
@@ -37,10 +63,29 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
         let state = &mut inner.state;
         let relation = <State as GetRelation<M>>::get_rel_mut(state);
 
-        relation.push(model);
-        inner.changes_count += 1;
+        let id = model.id();
+        let is_duplicated = relation.iter().find(|m| m.id() == id).is_some();
+        if is_duplicated {
+            return Err(ToydbError::DuplicatedId {
+                id: format!("{:?}", id),
+                model_name: base_type_name::<M>().to_owned(),
+            });
+        } else {
+            relation.push(model.clone());
+            inner.changes_count += 1;
+            Ok(model)
+        }
     }
 
+    /// Finds a record by its id.
+    /// Returns `None` if the record is not found.
+    ///
+    /// # Complexity
+    /// O(n)
+    ///
+    /// # Example
+    ///
+    /// TODO
     pub fn find<M: Model>(&self, id: &M::Id) -> Option<M>
     where
         M: Clone,
@@ -53,6 +98,14 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
         relation.iter().find(|m| m.id() == id).cloned()
     }
 
+    /// Returns all records that corresponds to the model type.
+    /// The order of the records is the same as they were inserted.
+    ///
+    /// # Complexity
+    /// O(n)
+    ///
+    /// # Example
+    /// TODO
     pub fn all<M: Model>(&self) -> Vec<M>
     where
         M: Clone,
@@ -63,6 +116,31 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
         let relation = <State as GetRelation<M>>::get_rel(state);
 
         relation.iter().cloned().collect()
+    }
+
+    /// Returns the number of records that corresponds to the model type.
+    ///
+    /// # Complexity
+    /// O(1)
+    ///
+    /// # Errors
+    ///
+    /// No real errors are expected to happen.
+    /// However, `Result<usize, ToydbError>` is used to keep the API consistent with other methods
+    /// and to make the user treat interaction with the database as fallible operations.
+    ///
+    /// # Example
+    /// TODO
+    ///
+    pub fn count<M: Model>(&self) -> Result<usize, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let inner = self.inner.lock().unwrap();
+        let state = &inner.state;
+        let relation = <State as GetRelation<M>>::get_rel(state);
+
+        Ok(relation.len())
     }
 
     pub fn update<M: Model>(&self, new_model: M)
@@ -78,7 +156,11 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
             *m = new_model;
         } else {
             // TODO: Return error?
-            panic!("Model {} not found by id = {:?}", std::any::type_name::<M>(), id);
+            panic!(
+                "Model {} not found by id = {:?}",
+                std::any::type_name::<M>(),
+                id
+            );
         }
         inner.changes_count += 1;
     }
@@ -100,11 +182,6 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
             None
         }
     }
-
-    // TODO:
-    //
-    // Getters:
-    // - find_all_by(predicate) -> Vec<M>
 }
 
 #[derive(Debug)]
@@ -115,20 +192,20 @@ struct InnerToydb<State: Default + Debug + Serialize + DeserializeOwned> {
 }
 
 impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
-    fn open(file_path: PathBuf) -> Result<Self, StorageError> {
+    fn open(file_path: PathBuf) -> Result<Self, ToydbError> {
         let path = ::std::path::Path::new(&file_path);
         if path.exists() {
             if path.is_file() {
                 Self::load(file_path)
             } else {
-                Err(StorageError::NotFile(file_path))
+                Err(ToydbError::NotFile(file_path))
             }
         } else {
             Self::create(file_path)
         }
     }
 
-    fn load(file_path: PathBuf) -> Result<Self, StorageError> {
+    fn load(file_path: PathBuf) -> Result<Self, ToydbError> {
         let content = std::fs::read_to_string(&file_path)?;
         let state: State = serde_json::from_str(&content)?;
         Ok(Self {
@@ -138,7 +215,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         })
     }
 
-    fn flush(&mut self) -> Result<(), StorageError> {
+    fn flush(&mut self) -> Result<(), ToydbError> {
         let content = ::serde_json::to_string_pretty(&self.state)?;
         ::std::fs::write(&self.file_path, content)?;
         self.changes_count = 0;
@@ -148,13 +225,13 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
     fn new(file_path: PathBuf) -> Self {
         let state = State::default();
         InnerToydb {
-            file_path: file_path,
+            file_path,
             state,
             changes_count: 0,
         }
     }
 
-    fn create(file_path: PathBuf) -> Result<Self, StorageError> {
+    fn create(file_path: PathBuf) -> Result<Self, ToydbError> {
         let mut db = Self::new(file_path);
         db.flush()?;
         Ok(db)
@@ -164,7 +241,6 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         self.changes_count > 0
     }
 }
-
 
 impl<State: Default + Debug + Serialize + DeserializeOwned> Drop for InnerToydb<State> {
     fn drop(&mut self) {
@@ -176,3 +252,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Drop for InnerToydb<
     }
 }
 
+fn base_type_name<T>() -> &'static str {
+    let full_name = std::any::type_name::<T>();
+    full_name.split_terminator("::").last().unwrap()
+}
