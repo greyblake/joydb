@@ -59,22 +59,22 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     where
         State: GetRelation<M>,
     {
-        let mut inner = self.inner.lock().unwrap();
-        let state = &mut inner.state;
-        let relation = <State as GetRelation<M>>::get_rel_mut(state);
+        self.with_inner_mut(|inner| {
+            let relation = inner.get_relation_mut::<M>();
 
-        let id = model.id();
-        let is_duplicated = relation.iter().find(|m| m.id() == id).is_some();
-        if is_duplicated {
-            return Err(ToydbError::DuplicatedId {
-                id: format!("{:?}", id),
-                model_name: base_type_name::<M>().to_owned(),
-            });
-        } else {
-            relation.push(model.clone());
-            inner.changes_count += 1;
-            Ok(model)
-        }
+            let id = model.id();
+            let is_duplicated = relation.iter().find(|m| m.id() == id).is_some();
+            if is_duplicated {
+                return Err(ToydbError::DuplicatedId {
+                    id: format!("{:?}", id),
+                    model_name: base_type_name::<M>().to_owned(),
+                });
+            } else {
+                relation.push(model.clone());
+                inner.changes_count += 1;
+                Ok(model)
+            }
+        })
     }
 
     /// Finds a record by its id.
@@ -91,11 +91,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
         M: Clone,
         State: GetRelation<M>,
     {
-        let inner = self.inner.lock().unwrap();
-        let state = &inner.state;
-        let relation = <State as GetRelation<M>>::get_rel(state);
-
-        relation.iter().find(|m| m.id() == id).cloned()
+        self.with_relation(|relation| relation.iter().find(|m| m.id() == id).cloned())
     }
 
     /// Returns all records that corresponds to the model type.
@@ -111,11 +107,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
         M: Clone,
         State: GetRelation<M>,
     {
-        let inner = self.inner.lock().unwrap();
-        let state = &inner.state;
-        let relation = <State as GetRelation<M>>::get_rel(state);
-
-        relation.iter().cloned().collect()
+        self.with_relation(|relation| relation.iter().cloned().collect())
     }
 
     /// Returns the number of records that corresponds to the model type.
@@ -136,51 +128,68 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     where
         State: GetRelation<M>,
     {
-        let inner = self.inner.lock().unwrap();
-        let state = &inner.state;
-        let relation = <State as GetRelation<M>>::get_rel(state);
-
-        Ok(relation.len())
+        self.with_relation(|relation| Ok(relation.len()))
     }
 
     pub fn update<M: Model>(&self, new_model: M)
     where
         State: GetRelation<M>,
     {
-        let mut inner = self.inner.lock().unwrap();
-        let state = &mut inner.state;
-        let relation = <State as GetRelation<M>>::get_rel_mut(state);
+        self.with_inner_mut(|inner| {
+            let relation = inner.get_relation_mut::<M>();
 
-        let id = new_model.id();
-        if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
-            *m = new_model;
-        } else {
-            // TODO: Return error?
-            panic!(
-                "Model {} not found by id = {:?}",
-                std::any::type_name::<M>(),
-                id
-            );
-        }
-        inner.changes_count += 1;
+            let id = new_model.id();
+            if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
+                *m = new_model;
+            } else {
+                // TODO: Return error?
+                panic!(
+                    "Model {} not found by id = {:?}",
+                    std::any::type_name::<M>(),
+                    id
+                );
+            }
+            inner.changes_count += 1;
+        })
     }
 
     pub fn delete<M: Model>(&self, id: &M::Id) -> Option<M>
     where
         State: GetRelation<M>,
     {
-        let mut inner = self.inner.lock().unwrap();
-        let state = &mut inner.state;
-        let relation = <State as GetRelation<M>>::get_rel_mut(state);
+        self.with_inner_mut(|inner| {
+            let relation = inner.get_relation_mut::<M>();
 
-        let index = relation.iter().position(|m| m.id() == id);
-        if let Some(index) = index {
-            let record = relation.remove(index);
-            inner.changes_count += 1;
-            Some(record)
-        } else {
-            None
-        }
+            let index = relation.iter().position(|m| m.id() == id);
+            if let Some(index) = index {
+                let record = relation.remove(index);
+                inner.changes_count += 1;
+                Some(record)
+            } else {
+                None
+            }
+        })
+    }
+
+    /// A helper method to work with the relation of the model.
+    /// It locks the inner state, gets the relation, and calls the closure with it.
+    /// The closure should return a value that will be returned by this method.
+    fn with_relation<M: Model, R, F>(&self, f: F) -> R
+    where
+        F: FnOnce(&[M]) -> R,
+        State: GetRelation<M>,
+    {
+        let inner = self.inner.lock().unwrap();
+        let relation = inner.get_relation::<M>();
+        f(relation)
+    }
+
+    fn with_inner_mut<R, F>(&self, f: F) -> R
+    where
+        F: FnOnce(&mut InnerToydb<State>) -> R,
+    {
+        let mut inner = self.inner.lock().unwrap();
+        f(&mut inner)
     }
 }
 
@@ -239,6 +248,22 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
 
     fn is_dirty(&self) -> bool {
         self.changes_count > 0
+    }
+
+    fn get_relation_mut<M: Model>(&mut self) -> &mut Vec<M>
+    where
+        State: GetRelation<M>,
+    {
+        let state = &mut self.state;
+        <State as GetRelation<M>>::get_rel_mut(state)
+    }
+
+    fn get_relation<M: Model>(&self) -> &[M]
+    where
+        State: GetRelation<M>,
+    {
+        let state = &self.state;
+        <State as GetRelation<M>>::get_rel(state)
     }
 }
 
