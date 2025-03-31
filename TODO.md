@@ -17,6 +17,7 @@
 ### Improvements
 - [ ] Finalize naming of the methods
 - [ ] Rename `GetRelation` to something else?
+- [ ] Address all TODOs
 
 
 ### Setup CI
@@ -34,7 +35,7 @@
 
 - [ ] In memory only?
 - [x] Rework `define_state!` macro to avoid need to specify plural names.
-- [ ] Reduce boilerplate in Db methods
+- [x] Reduce boilerplate in Db methods
 
 
 - Rename?

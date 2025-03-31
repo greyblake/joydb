@@ -59,22 +59,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     where
         State: GetRelation<M>,
     {
-        self.with_inner_mut(|inner| {
-            let relation = inner.get_relation_mut::<M>();
-
-            let id = model.id();
-            let is_duplicated = relation.iter().find(|m| m.id() == id).is_some();
-            if is_duplicated {
-                return Err(ToydbError::DuplicatedId {
-                    id: format!("{:?}", id),
-                    model_name: base_type_name::<M>().to_owned(),
-                });
-            } else {
-                relation.push(model.clone());
-                inner.changes_count += 1;
-                Ok(model)
-            }
-        })
+        self.inner.lock().unwrap().insert(model)
     }
 
     /// Finds a record by its id.
@@ -86,12 +71,11 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     /// # Example
     ///
     /// TODO
-    pub fn find<M: Model>(&self, id: &M::Id) -> Option<M>
+    pub fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
     where
-        M: Clone,
         State: GetRelation<M>,
     {
-        self.with_relation(|relation| relation.iter().find(|m| m.id() == id).cloned())
+        self.inner.lock().unwrap().find(id)
     }
 
     /// Returns all records that corresponds to the model type.
@@ -102,12 +86,11 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     ///
     /// # Example
     /// TODO
-    pub fn all<M: Model>(&self) -> Vec<M>
+    pub fn all<M: Model>(&self) -> Result<Vec<M>, ToydbError>
     where
-        M: Clone,
         State: GetRelation<M>,
     {
-        self.with_relation(|relation| relation.iter().cloned().collect())
+        self.inner.lock().unwrap().all()
     }
 
     /// Returns the number of records that corresponds to the model type.
@@ -128,68 +111,21 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     where
         State: GetRelation<M>,
     {
-        self.with_relation(|relation| Ok(relation.len()))
+        self.inner.lock().unwrap().count()
     }
 
-    pub fn update<M: Model>(&self, new_model: M)
+    pub fn update<M: Model>(&self, new_model: M) -> Result<(), ToydbError>
     where
         State: GetRelation<M>,
     {
-        self.with_inner_mut(|inner| {
-            let relation = inner.get_relation_mut::<M>();
-
-            let id = new_model.id();
-            if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
-                *m = new_model;
-            } else {
-                // TODO: Return error?
-                panic!(
-                    "Model {} not found by id = {:?}",
-                    std::any::type_name::<M>(),
-                    id
-                );
-            }
-            inner.changes_count += 1;
-        })
+        self.inner.lock().unwrap().update(new_model)
     }
 
-    pub fn delete<M: Model>(&self, id: &M::Id) -> Option<M>
+    pub fn delete<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
     where
         State: GetRelation<M>,
     {
-        self.with_inner_mut(|inner| {
-            let relation = inner.get_relation_mut::<M>();
-
-            let index = relation.iter().position(|m| m.id() == id);
-            if let Some(index) = index {
-                let record = relation.remove(index);
-                inner.changes_count += 1;
-                Some(record)
-            } else {
-                None
-            }
-        })
-    }
-
-    /// A helper method to work with the relation of the model.
-    /// It locks the inner state, gets the relation, and calls the closure with it.
-    /// The closure should return a value that will be returned by this method.
-    fn with_relation<M: Model, R, F>(&self, f: F) -> R
-    where
-        F: FnOnce(&[M]) -> R,
-        State: GetRelation<M>,
-    {
-        let inner = self.inner.lock().unwrap();
-        let relation = inner.get_relation::<M>();
-        f(relation)
-    }
-
-    fn with_inner_mut<R, F>(&self, f: F) -> R
-    where
-        F: FnOnce(&mut InnerToydb<State>) -> R,
-    {
-        let mut inner = self.inner.lock().unwrap();
-        f(&mut inner)
+        self.inner.lock().unwrap().delete(id)
     }
 }
 
@@ -264,6 +200,87 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
     {
         let state = &self.state;
         <State as GetRelation<M>>::get_rel(state)
+    }
+
+    fn insert<M: Model>(&mut self, model: M) -> Result<M, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let relation = self.get_relation_mut::<M>();
+
+        let id = model.id();
+        let is_duplicated = relation.iter().find(|m| m.id() == id).is_some();
+        if is_duplicated {
+            return Err(ToydbError::DuplicatedId {
+                id: format!("{:?}", id),
+                model_name: base_type_name::<M>().to_owned(),
+            });
+        } else {
+            relation.push(model.clone());
+            self.changes_count += 1;
+            Ok(model)
+        }
+    }
+
+    fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let relation = self.get_relation::<M>();
+        let maybe_record = relation.iter().find(|m| m.id() == id).cloned();
+        Ok(maybe_record)
+    }
+
+    fn all<M: Model>(&self) -> Result<Vec<M>, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let records = self.get_relation::<M>().to_vec();
+        Ok(records)
+    }
+
+    pub fn count<M: Model>(&self) -> Result<usize, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        Ok(self.get_relation::<M>().len())
+    }
+
+    fn update<M: Model>(&mut self, new_model: M) -> Result<(), ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let relation = self.get_relation_mut::<M>();
+
+        let id = new_model.id();
+        if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
+            *m = new_model;
+            self.changes_count += 1;
+            Ok(())
+        } else {
+            // TODO: Return error?
+            panic!(
+                "Model {} not found by id = {:?}",
+                std::any::type_name::<M>(),
+                id
+            );
+        }
+    }
+
+    fn delete<M: Model>(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let relation = self.get_relation_mut::<M>();
+
+        let index = relation.iter().position(|m| m.id() == id);
+        if let Some(index) = index {
+            let record = relation.remove(index);
+            self.changes_count += 1;
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
     }
 }
 

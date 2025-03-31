@@ -63,7 +63,7 @@ type Db = Toydb<DbState>;
 
 // Handler for the index page
 async fn index(State(db): State<Db>) -> impl IntoResponse {
-    let todos = db.all::<Todo>();
+    let todos = db.all::<Todo>().unwrap();
 
     let pending_todos: Vec<_> = todos.iter().filter(|t| !t.completed).cloned().collect();
     let completed_todos: Vec<_> = todos.iter().filter(|t| t.completed).cloned().collect();
@@ -77,16 +77,17 @@ async fn add_todo(State(db): State<Db>, Form(new_todo): Form<NewTodo>) -> impl I
         id: Uuid::new_v4(),
         name: new_todo.name,
         completed: false,
-    });
+    })
+    .unwrap();
 
     axum::response::Redirect::to("/")
 }
 
 // Handler for toggling todo completion status
 async fn toggle_todo(State(db): State<Db>, Path(id): Path<Uuid>) -> impl IntoResponse {
-    if let Some(mut todo) = db.find::<Todo>(&id) {
+    if let Some(mut todo) = db.find::<Todo>(&id).unwrap() {
         todo.completed = !todo.completed;
-        db.update(todo);
+        db.update(todo).unwrap()
     }
 
     axum::response::Redirect::to("/")
