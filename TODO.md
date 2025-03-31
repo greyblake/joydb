@@ -1,4 +1,7 @@
 
+
+
+
 ### Flushing
 - [ ] Spawn a separate thread on `open` to flush database with some interval
   -  The thread should own a weak ref (see `Arc::downgrade`)
@@ -30,8 +33,17 @@
 ### Further ideas
 
 - [ ] In memory only?
+- [x] Rework `define_state!` macro to avoid need to specify plural names.
+- [ ] Reduce boilerplate in Db methods
 
 
-- Rename? (e.g. `playdb`, `loldb`, `jokedb`, `joydb`)
+- Rename?
+    - (e.g. `playdb`, `loldb`, `jokedb`, `joydb`)
+    - `alkali` (non-ACID :D )
+    - `maydb`, `maybd`
+    - `worm`, `storm`
+    - `jorm` (Jörm - short from Jörmungandr) - also could be for "Json ORM".
+
+
 
 

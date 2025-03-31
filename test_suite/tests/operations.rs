@@ -2,8 +2,7 @@ use test_suite::helpers::with_open_db;
 use toydb::ToydbError;
 use uuid::Uuid;
 
-use test_suite::database::{Database, Post, User};
-use test_suite::helpers::gen_db_file_path;
+use test_suite::database::{Post, User};
 
 #[test]
 fn should_insert_and_find() {

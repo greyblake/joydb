@@ -21,7 +21,7 @@ async fn main() {
         .with_state(db.clone());
 
     // Start the server
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3001")
         .await
         .unwrap();
 
@@ -52,10 +52,10 @@ struct NewTodo {
     name: String,
 }
 
-define_state! {
+define_state!(
     DbState,
-    todos: Todo,
-}
+    models: [Todo],
+);
 
 type Db = Toydb<DbState>;
 

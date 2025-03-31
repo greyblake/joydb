@@ -1,5 +1,5 @@
 {
-  "users": [
+  "User": [
     {
       "id": 1,
       "name": "Alice"
@@ -9,7 +9,7 @@
       "name": "Bob"
     }
   ],
-  "posts": [
+  "Post": [
     {
       "id": 1,
       "title": "Hello, world!"

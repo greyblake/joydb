@@ -17,8 +17,7 @@ pub struct User {
 
 define_state! {
     DatabaseState,
-    users: User,
-    posts: Post,
+    models: [User, Post],
 }
 
 pub type Database = Toydb<DatabaseState>;

@@ -2,27 +2,28 @@
 macro_rules! define_state {
     (
         $state_type:ident,
-        $(
-            $plural:ident : $model_type:ty
-        ),* $(,)?
+        models: [$(
+            $model_type:ident
+        ),*] $(,)?
     ) => {
         /// A struct that holds the data and can be (de)serialized to/from JSON.
         #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
         #[serde(default)]
+        #[allow(non_snake_case)]
         pub struct $state_type {
             $(
-                $plural: Vec<$model_type>
+                $model_type: Vec<$model_type>
             ),+
         }
 
         $(
             impl ::toydb::GetRelation<$model_type> for $state_type {
                 fn get_rel_mut(&mut self) -> &mut Vec<$model_type> {
-                    &mut self.$plural
+                    &mut self.$model_type
                 }
 
                 fn get_rel(&self) -> &Vec<$model_type> {
-                    &self.$plural
+                    &self.$model_type
                 }
             }
         )+

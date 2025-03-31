@@ -15,8 +15,7 @@ struct Post {
 
 toydb::define_state! {
     AppState,
-    users: User,
-    posts: Post,
+    models: [User, Post],
 }
 
 type Db = Toydb<AppState>;
