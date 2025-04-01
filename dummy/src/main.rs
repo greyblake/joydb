@@ -52,9 +52,9 @@ fn main() {
     // Load the data back
     {
         let db = Db::open(DB_FILE).unwrap();
-        let alice: User = db.find(&1).unwrap();
+        let alice: User = db.find(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 
-        db.delete::<Post>(&2);
+        db.delete::<Post>(&2).unwrap();
     }
 }

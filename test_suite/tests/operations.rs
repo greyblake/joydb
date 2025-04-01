@@ -59,3 +59,45 @@ fn should_return_error_on_attempt_to_insert_record_with_duplicated_id() {
         assert_eq!(same_alice.name, "Alice");
     });
 }
+
+#[test]
+fn should_update() {
+    with_open_db(|db| {
+        let alice = User {
+            id: Uuid::new_v4(),
+            name: "Alice".to_string(),
+        };
+        let alice_id = alice.id;
+        db.insert(alice).unwrap();
+
+        let alice = db.find::<User>(&alice_id).unwrap().unwrap();
+        assert_eq!(alice.name, "Alice");
+
+        let alice = User {
+            id: alice_id,
+            name: "Alice Updated".to_string(),
+        };
+        db.update(alice).unwrap();
+
+        let alice = db.find::<User>(&alice_id).unwrap().unwrap();
+        assert_eq!(alice.name, "Alice Updated");
+    });
+}
+
+#[test]
+fn should_return_error_on_update_if_record_does_not_exist() {
+    with_open_db(|db| {
+        let alice = User {
+            id: Uuid::new_v4(),
+            name: "Alice".to_string(),
+        };
+        let alice_id = alice.id;
+
+        let err = db.update(alice).unwrap_err();
+        assert!(matches!(err, ToydbError::NotFound { .. }));
+        assert_eq!(
+            err.to_string(),
+            format!("User with id = {alice_id} not found")
+        );
+    });
+}

@@ -14,4 +14,7 @@ pub enum ToydbError {
 
     #[error("{model_name} with id = {id} already exists")]
     DuplicatedId { id: String, model_name: String },
+
+    #[error("{model_name} with id = {id} not found")]
+    NotFound { id: String, model_name: String },
 }

@@ -258,12 +258,10 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
             self.changes_count += 1;
             Ok(())
         } else {
-            // TODO: Return error?
-            panic!(
-                "Model {} not found by id = {:?}",
-                std::any::type_name::<M>(),
-                id
-            );
+            Err(ToydbError::NotFound {
+                id: format!("{:?}", id),
+                model_name: base_type_name::<M>().to_owned(),
+            })
         }
     }
 
