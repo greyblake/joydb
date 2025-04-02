@@ -46,33 +46,26 @@ impl<M: Model> Relation<M> {
         Ok(self.models.to_vec())
     }
 
-    /*
-
-    pub fn count<M: Model>(&self) -> Result<usize, ToydbError>
-    where
-        State: GetRelation<M>,
-    {
-        Ok(self.get_relation::<M>().len())
+    pub(crate) fn count(&self) -> Result<usize, ToydbError> {
+        Ok(self.models.len())
     }
 
-    fn update<M: Model>(&mut self, new_model: M) -> Result<(), ToydbError>
-    where
-        State: GetRelation<M>,
-    {
-        let relation = self.get_relation_mut::<M>();
-
+    pub(crate) fn update(&mut self, new_model: M) -> Result<(), ToydbError> {
         let id = new_model.id();
-        if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
+
+        if let Some(m) = self.models.iter_mut().find(|m| m.id() == id) {
             *m = new_model;
-            self.is_dirty = true;
+            self.meta.is_dirty = true;
             Ok(())
         } else {
             Err(ToydbError::NotFound {
                 id: format!("{:?}", id),
-                model_name: base_type_name::<M>().to_owned(),
+                model_name: M::relation_name().to_owned(),
             })
         }
     }
+
+    /*
 
     fn delete<M: Model>(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError>
     where
@@ -291,6 +284,48 @@ mod tests {
             let relation = sample_relation();
             let all_posts = relation.all().unwrap();
             assert_eq!(all_posts, sample_posts());
+        }
+    }
+
+    mod count {
+        use super::*;
+
+        #[test]
+        fn should_return_number_of_records() {
+            let relation = sample_relation();
+            let count = relation.count().unwrap();
+            assert_eq!(count, 2);
+        }
+    }
+
+    mod update {
+        use super::*;
+
+        #[test]
+        fn should_update_record_and_mark_dirty() {
+            let mut relation = sample_relation();
+            let new_post = Post {
+                id: 2,
+                title: "Updated Second".to_string(),
+            };
+            relation.update(new_post.clone()).unwrap();
+
+            let updated_post = relation.find(&2).unwrap().unwrap();
+            assert_eq!(updated_post, new_post);
+            assert_eq!(relation.meta.is_dirty, true);
+        }
+
+        #[test]
+        fn should_return_error_when_record_not_found() {
+            let mut relation = sample_relation();
+            let new_post = Post {
+                id: 999,
+                title: "Updated Second".to_string(),
+            };
+            let err = relation.update(new_post).unwrap_err();
+
+            assert!(matches!(err, ToydbError::NotFound { .. }));
+            assert_eq!(err.to_string(), format!("Post with id = 999 not found"));
         }
     }
 }
