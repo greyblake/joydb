@@ -42,9 +42,9 @@ impl<M: Model> Relation<M> {
         Ok(maybe_record)
     }
 
-    // fn all(&self) -> Result<Vec<M>, ToydbError> {
-    //     Ok(self.models.to_vec())
-    // }
+    pub(crate) fn all(&self) -> Result<Vec<M>, ToydbError> {
+        Ok(self.models.to_vec())
+    }
 
     /*
 
@@ -280,6 +280,17 @@ mod tests {
             let maybe_post = relation.find(&id).unwrap();
             let post = maybe_post.unwrap();
             assert_eq!(post, second_post());
+        }
+    }
+
+    mod all {
+        use super::*;
+
+        #[test]
+        fn should_return_all_records() {
+            let relation = sample_relation();
+            let all_posts = relation.all().unwrap();
+            assert_eq!(all_posts, sample_posts());
         }
     }
 }
