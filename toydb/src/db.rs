@@ -155,12 +155,12 @@ impl<S: State> InnerToydb<S> {
         Ok(Self { file_path, state })
     }
 
+    /// Write data to the file system if there are unsaved changes.
     fn flush(&mut self) -> Result<(), ToydbError> {
-        let content = ::serde_json::to_string_pretty(&self.state)?;
-        ::std::fs::write(&self.file_path, content)?;
-        // TODO:
-        // Add `is_dirty` method on State
-        self.state.reset_dirty();
+        if self.is_dirty() {
+            self.save()?;
+            self.state.reset_dirty();
+        }
         Ok(())
     }
 
@@ -171,8 +171,14 @@ impl<S: State> InnerToydb<S> {
 
     fn create(file_path: PathBuf) -> Result<Self, ToydbError> {
         let mut db = Self::new(file_path);
-        db.flush()?;
+        db.save()?;
         Ok(db)
+    }
+
+    fn save(&mut self) -> Result<(), ToydbError> {
+        let content = ::serde_json::to_string_pretty(&self.state)?;
+        ::std::fs::write(&self.file_path, content)?;
+        Ok(())
     }
 
     fn is_dirty(&self) -> bool {
@@ -246,10 +252,8 @@ impl<S: State> InnerToydb<S> {
 
 impl<S: State> Drop for InnerToydb<S> {
     fn drop(&mut self) {
-        if self.is_dirty() {
-            if let Err(err) = self.flush() {
-                eprintln!("Failed to flush the database: {}", err);
-            }
+        if let Err(err) = self.flush() {
+            eprintln!("Failed to flush the database: {}", err);
         }
     }
 }
