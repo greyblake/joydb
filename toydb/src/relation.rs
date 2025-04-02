@@ -12,6 +12,8 @@ pub struct Relation<M: Model> {
     pub(crate) models: Vec<M>,
 }
 
+impl<M: Model> Relation<M> {}
+
 /// Metadata for the relation.
 /// It's not serialized or persisted. They meant to exist only in memory.
 #[derive(Debug, Default)]

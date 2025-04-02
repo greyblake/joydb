@@ -133,7 +133,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
 struct InnerToydb<State: Default + Debug + Serialize + DeserializeOwned> {
     file_path: PathBuf,
     state: State,
-    changes_count: u64,
+    is_dirty: bool,
 }
 
 impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
@@ -156,14 +156,14 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         Ok(Self {
             file_path,
             state,
-            changes_count: 0,
+            is_dirty: false,
         })
     }
 
     fn flush(&mut self) -> Result<(), ToydbError> {
         let content = ::serde_json::to_string_pretty(&self.state)?;
         ::std::fs::write(&self.file_path, content)?;
-        self.changes_count = 0;
+        self.is_dirty = false;
         Ok(())
     }
 
@@ -172,7 +172,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         InnerToydb {
             file_path,
             state,
-            changes_count: 0,
+            is_dirty: false,
         }
     }
 
@@ -183,7 +183,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
     }
 
     fn is_dirty(&self) -> bool {
-        self.changes_count > 0
+        self.is_dirty()
     }
 
     fn get_relation_mut<M: Model>(&mut self) -> &mut Vec<M>
@@ -217,7 +217,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
             });
         } else {
             relation.push(model.clone());
-            self.changes_count += 1;
+            self.is_dirty = true;
             Ok(model)
         }
     }
@@ -255,7 +255,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         let id = new_model.id();
         if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
             *m = new_model;
-            self.changes_count += 1;
+            self.is_dirty = true;
             Ok(())
         } else {
             Err(ToydbError::NotFound {
@@ -274,7 +274,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         let index = relation.iter().position(|m| m.id() == id);
         if let Some(index) = index {
             let record = relation.remove(index);
-            self.changes_count += 1;
+            self.is_dirty = true;
             Ok(Some(record))
         } else {
             Ok(None)
@@ -295,14 +295,4 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Drop for InnerToydb<
 fn base_type_name<T>() -> &'static str {
     let full_name = std::any::type_name::<T>();
     full_name.split_terminator("::").last().unwrap()
-}
-
-struct Relation<M: Model> {
-    meta: RelationMeta,
-    models: Vec<M>,
-}
-
-#[derive(Debug, Default)]
-struct RelationMeta {
-    changes_count: u64,
 }
