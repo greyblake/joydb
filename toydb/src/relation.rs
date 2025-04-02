@@ -19,7 +19,10 @@ impl<M: Model> Relation<M> {
         }
     }
 
-    fn insert(&mut self, model: M) -> Result<M, ToydbError> {
+    // TODO:
+    // - Change to `model: &M`, don't take ownership
+    // - Don't return the model, return `()`.
+    pub(crate) fn insert(&mut self, model: M) -> Result<M, ToydbError> {
         let id = model.id();
         let is_duplicated = self.models.iter().find(|m| m.id() == id).is_some();
         if is_duplicated {
@@ -34,10 +37,10 @@ impl<M: Model> Relation<M> {
         }
     }
 
-    // fn find(&self, id: &M::Id) -> Result<Option<M>, ToydbError> {
-    //     let maybe_record = self.models.iter().find(|m| m.id() == id).cloned();
-    //     Ok(maybe_record)
-    // }
+    pub(crate) fn find(&self, id: &M::Id) -> Result<Option<M>, ToydbError> {
+        let maybe_record = self.models.iter().find(|m| m.id() == id).cloned();
+        Ok(maybe_record)
+    }
 
     // fn all(&self) -> Result<Vec<M>, ToydbError> {
     //     Ok(self.models.to_vec())
@@ -143,21 +146,33 @@ mod tests {
         }
     }
 
+    fn sample_posts() -> Vec<Post> {
+        vec![first_post(), second_post()]
+    }
+
+    fn first_post() -> Post {
+        Post {
+            id: 1,
+            title: "First".to_string(),
+        }
+    }
+
+    fn second_post() -> Post {
+        Post {
+            id: 2,
+            title: "Second".to_string(),
+        }
+    }
+
+    fn sample_relation() -> Relation<Post> {
+        Relation {
+            meta: RelationMeta { is_dirty: false },
+            models: sample_posts(),
+        }
+    }
+
     mod serialization_and_deserialization {
         use super::*;
-
-        fn sample_posts() -> Vec<Post> {
-            vec![
-                Post {
-                    id: 1,
-                    title: "First".to_string(),
-                },
-                Post {
-                    id: 2,
-                    title: "Second".to_string(),
-                },
-            ]
-        }
 
         #[test]
         fn test_serialize_relation() {
@@ -209,18 +224,18 @@ mod tests {
 
         #[test]
         fn should_insert_new_record_and_mark_dirty() {
-            let mut relation = Relation::new();
-            assert_eq!(relation.models.len(), 0);
+            let mut relation = sample_relation();
+            assert_eq!(relation.models.len(), 2);
             assert_eq!(relation.meta.is_dirty, false);
 
             let post = Post {
-                id: 1,
-                title: "First".to_string(),
+                id: 13,
+                title: "Thirteen".to_string(),
             };
             relation.insert(post.clone()).unwrap();
 
-            assert_eq!(relation.models.len(), 1);
-            assert_eq!(relation.models[0], post);
+            assert_eq!(relation.models.len(), 3);
+            assert_eq!(relation.models[2], post);
             assert_eq!(relation.meta.is_dirty, true);
         }
 
@@ -244,6 +259,27 @@ mod tests {
                 err.to_string(),
                 format!("Post with id = 777 already exists")
             );
+        }
+    }
+
+    mod find {
+        use super::*;
+
+        #[test]
+        fn should_return_none_when_record_not_found() {
+            let relation = sample_relation();
+            let id = 999;
+            let maybe_post = relation.find(&id).unwrap();
+            assert!(maybe_post.is_none());
+        }
+
+        #[test]
+        fn should_return_record_when_found() {
+            let relation = sample_relation();
+            let id = 2;
+            let maybe_post = relation.find(&id).unwrap();
+            let post = maybe_post.unwrap();
+            assert_eq!(post, second_post());
         }
     }
 }
