@@ -12,42 +12,38 @@ pub struct Relation<M: Model> {
 }
 
 impl<M: Model> Relation<M> {
-    /*
+    fn new() -> Self {
+        Relation {
+            meta: RelationMeta::default(),
+            models: Vec::new(),
+        }
+    }
 
     fn insert(&mut self, model: M) -> Result<M, ToydbError> {
         let id = model.id();
-        let is_duplicated = self.models
-            .iter().find(|m| m.id() == id).is_some();
+        let is_duplicated = self.models.iter().find(|m| m.id() == id).is_some();
         if is_duplicated {
             return Err(ToydbError::DuplicatedId {
                 id: format!("{:?}", id),
-                model_name: base_type_name::<M>().to_owned(),
+                model_name: M::relation_name().to_owned(),
             });
         } else {
-            relation.push(model.clone());
-            self.is_dirty = true;
+            self.models.push(model.clone());
+            self.meta.is_dirty = true;
             Ok(model)
         }
     }
-    */
+
+    // fn find(&self, id: &M::Id) -> Result<Option<M>, ToydbError> {
+    //     let maybe_record = self.models.iter().find(|m| m.id() == id).cloned();
+    //     Ok(maybe_record)
+    // }
+
+    // fn all(&self) -> Result<Vec<M>, ToydbError> {
+    //     Ok(self.models.to_vec())
+    // }
 
     /*
-    fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
-    where
-        State: GetRelation<M>,
-    {
-        let relation = self.get_relation::<M>();
-        let maybe_record = relation.iter().find(|m| m.id() == id).cloned();
-        Ok(maybe_record)
-    }
-
-    fn all<M: Model>(&self) -> Result<Vec<M>, ToydbError>
-    where
-        State: GetRelation<M>,
-    {
-        let records = self.get_relation::<M>().to_vec();
-        Ok(records)
-    }
 
     pub fn count<M: Model>(&self) -> Result<usize, ToydbError>
     where
@@ -147,21 +143,21 @@ mod tests {
         }
     }
 
-    fn sample_posts() -> Vec<Post> {
-        vec![
-            Post {
-                id: 1,
-                title: "First".to_string(),
-            },
-            Post {
-                id: 2,
-                title: "Second".to_string(),
-            },
-        ]
-    }
-
     mod serialization_and_deserialization {
         use super::*;
+
+        fn sample_posts() -> Vec<Post> {
+            vec![
+                Post {
+                    id: 1,
+                    title: "First".to_string(),
+                },
+                Post {
+                    id: 2,
+                    title: "Second".to_string(),
+                },
+            ]
+        }
 
         #[test]
         fn test_serialize_relation() {
@@ -205,6 +201,49 @@ mod tests {
 
             assert_eq!(original.models, deserialized.models);
             assert_eq!(deserialized.meta.is_dirty, false); // Meta is not serialized
+        }
+    }
+
+    mod insert {
+        use super::*;
+
+        #[test]
+        fn should_insert_new_record_and_mark_dirty() {
+            let mut relation = Relation::new();
+            assert_eq!(relation.models.len(), 0);
+            assert_eq!(relation.meta.is_dirty, false);
+
+            let post = Post {
+                id: 1,
+                title: "First".to_string(),
+            };
+            relation.insert(post.clone()).unwrap();
+
+            assert_eq!(relation.models.len(), 1);
+            assert_eq!(relation.models[0], post);
+            assert_eq!(relation.meta.is_dirty, true);
+        }
+
+        #[test]
+        fn should_return_an_error_when_record_with_id_already_exists() {
+            let mut relation = Relation::new();
+            let post = Post {
+                id: 777,
+                title: "First".to_string(),
+            };
+            relation.insert(post.clone()).unwrap();
+
+            let another_post = Post {
+                id: 777,
+                title: "Another First".to_string(),
+            };
+            let err = relation.insert(another_post.clone()).unwrap_err();
+
+            assert!(matches!(err, ToydbError::DuplicatedId { .. }));
+            assert_eq!(
+                err.to_string(),
+                format!("Post with id = 777 already exists")
+            );
         }
     }
 }
