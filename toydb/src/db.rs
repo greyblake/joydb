@@ -296,3 +296,13 @@ fn base_type_name<T>() -> &'static str {
     let full_name = std::any::type_name::<T>();
     full_name.split_terminator("::").last().unwrap()
 }
+
+struct Relation<M: Model> {
+    meta: RelationMeta,
+    models: Vec<M>,
+}
+
+#[derive(Debug, Default)]
+struct RelationMeta {
+    changes_count: u64,
+}

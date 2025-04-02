@@ -40,3 +40,7 @@
     - `maydb`, `maybd`
     - `worm`, `storm`
     - `jorm` (Jörm - short from Jörmungandr) - also could be for "Json ORM".
+    - `quasidb` (Quasi DB)
+    - `shamdb` (Sham DB)
+    - `bogusdb` (Bogus)
+    - `notdb`, `keindb`
