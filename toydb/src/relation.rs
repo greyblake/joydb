@@ -65,24 +65,16 @@ impl<M: Model> Relation<M> {
         }
     }
 
-    /*
-
-    fn delete<M: Model>(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError>
-    where
-        State: GetRelation<M>,
-    {
-        let relation = self.get_relation_mut::<M>();
-
-        let index = relation.iter().position(|m| m.id() == id);
+    pub(crate) fn delete(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError> {
+        let index = self.models.iter().position(|m| m.id() == id);
         if let Some(index) = index {
-            let record = relation.remove(index);
-            self.is_dirty = true;
+            let record = self.models.remove(index);
+            self.meta.is_dirty = true;
             Ok(Some(record))
         } else {
             Ok(None)
         }
     }
-    */
 }
 
 /// Metadata for the relation.
@@ -326,6 +318,32 @@ mod tests {
 
             assert!(matches!(err, ToydbError::NotFound { .. }));
             assert_eq!(err.to_string(), format!("Post with id = 999 not found"));
+        }
+    }
+
+    mod delete {
+        use super::*;
+
+        #[test]
+        fn should_delete_record_and_mark_dirty() {
+            let mut relation = sample_relation();
+            let id = 1;
+            let deleted_post = relation.delete(&id).unwrap().unwrap();
+
+            assert_eq!(relation.models.len(), 1);
+            assert_eq!(relation.models[0], second_post());
+            assert_eq!(relation.meta.is_dirty, true);
+            assert_eq!(deleted_post, first_post());
+        }
+
+        #[test]
+        fn should_return_none_when_record_not_found() {
+            let mut relation = sample_relation();
+            let id = 555;
+            let maybe_post = relation.delete(&id).unwrap();
+            assert!(maybe_post.is_none());
+            assert_eq!(relation.models.len(), 2);
+            assert_eq!(relation.meta.is_dirty, false);
         }
     }
 }
