@@ -3,6 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::ToydbError;
 use crate::traits::Model;
 
+#[derive(Debug)]
 pub struct Relation<M: Model> {
     // We ignore meta while serializing and deserializing.
     pub(crate) meta: RelationMeta,
@@ -11,8 +12,25 @@ pub struct Relation<M: Model> {
     pub(crate) models: Vec<M>,
 }
 
+impl<M> Default for Relation<M>
+where
+    M: Model,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<M: Model> Relation<M> {
-    fn new() -> Self {
+    pub fn is_dirty(&self) -> bool {
+        self.meta.is_dirty
+    }
+
+    pub fn reset_dirty(&mut self) {
+        self.meta.is_dirty = false;
+    }
+
+    pub(crate) fn new() -> Self {
         Relation {
             meta: RelationMeta::default(),
             models: Vec::new(),
@@ -345,5 +363,17 @@ mod tests {
             assert_eq!(relation.models.len(), 2);
             assert_eq!(relation.meta.is_dirty, false);
         }
+    }
+
+    #[test]
+    fn should_reset_dirty() {
+        let mut relation = sample_relation();
+        assert_eq!(relation.is_dirty(), false);
+
+        relation.delete(&1).unwrap();
+        assert_eq!(relation.is_dirty(), true);
+
+        relation.reset_dirty();
+        assert_eq!(relation.is_dirty(), false);
     }
 }

@@ -45,4 +45,11 @@
     - `bogusdb` (Bogus)
     - `notdb`, `keindb`
     - `undb`,
+    - `fauxdb` - (Faux is French for "false" a short, catchy name that’s obviously not real.)
     - `neverdb`
+    - `maldb` (like opposite from DB in Esperanto, or bad in Spanish)
+    - `nondb`
+    - `minidb`
+    - `pseudb`
+    - `scratchdb`
+    - `pocdb` - (Proof of Concept DB)

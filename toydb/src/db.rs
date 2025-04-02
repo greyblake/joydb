@@ -1,5 +1,5 @@
-use crate::ToydbError;
 use crate::traits::{GetRelation, Model};
+use crate::{Relation, State, ToydbError};
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 use std::ops::Drop;
@@ -21,13 +21,13 @@ use std::{
 /// | Delete    | [`delete`](Self::delete)                                         |
 ///
 #[derive(Debug)]
-pub struct Toydb<State: Default + Debug + Serialize + DeserializeOwned> {
-    inner: Arc<Mutex<InnerToydb<State>>>,
+pub struct Toydb<S: Default + Debug + Serialize + DeserializeOwned + State> {
+    inner: Arc<Mutex<InnerToydb<S>>>,
 }
 
 // Implement `Clone` manually, otherwise the compile requires a `State: Clone` bound.
 // But we deliberately don't want to be the inner state to implement `Clone`.
-impl<State: Default + Debug + Serialize + DeserializeOwned> Clone for Toydb<State> {
+impl<S: State> Clone for Toydb<S> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -35,7 +35,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Clone for Toydb<Stat
     }
 }
 
-impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
+impl<S: State> Toydb<S> {
     pub fn open(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ToydbError> {
         let file_path = file_path.into();
         let inner = InnerToydb::open(file_path)?;
@@ -57,7 +57,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     /// TODO
     pub fn insert<M: Model>(&self, model: M) -> Result<M, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         self.inner.lock().unwrap().insert(model)
     }
@@ -73,7 +73,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     /// TODO
     pub fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         self.inner.lock().unwrap().find(id)
     }
@@ -88,7 +88,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     /// TODO
     pub fn all<M: Model>(&self) -> Result<Vec<M>, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         self.inner.lock().unwrap().all()
     }
@@ -109,34 +109,33 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Toydb<State> {
     ///
     pub fn count<M: Model>(&self) -> Result<usize, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         self.inner.lock().unwrap().count()
     }
 
     pub fn update<M: Model>(&self, new_model: M) -> Result<(), ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         self.inner.lock().unwrap().update(new_model)
     }
 
     pub fn delete<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         self.inner.lock().unwrap().delete(id)
     }
 }
 
 #[derive(Debug)]
-struct InnerToydb<State: Default + Debug + Serialize + DeserializeOwned> {
+struct InnerToydb<S: State> {
     file_path: PathBuf,
-    state: State,
-    is_dirty: bool,
+    state: S,
 }
 
-impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
+impl<S: State> InnerToydb<S> {
     fn open(file_path: PathBuf) -> Result<Self, ToydbError> {
         let path = ::std::path::Path::new(&file_path);
         if path.exists() {
@@ -152,28 +151,22 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
 
     fn load(file_path: PathBuf) -> Result<Self, ToydbError> {
         let content = std::fs::read_to_string(&file_path)?;
-        let state: State = serde_json::from_str(&content)?;
-        Ok(Self {
-            file_path,
-            state,
-            is_dirty: false,
-        })
+        let state: S = serde_json::from_str(&content)?;
+        Ok(Self { file_path, state })
     }
 
     fn flush(&mut self) -> Result<(), ToydbError> {
         let content = ::serde_json::to_string_pretty(&self.state)?;
         ::std::fs::write(&self.file_path, content)?;
-        self.is_dirty = false;
+        // TODO:
+        // Add `is_dirty` method on State
+        self.state.reset_dirty();
         Ok(())
     }
 
     fn new(file_path: PathBuf) -> Self {
-        let state = State::default();
-        InnerToydb {
-            file_path,
-            state,
-            is_dirty: false,
-        }
+        let state = S::default();
+        InnerToydb { file_path, state }
     }
 
     fn create(file_path: PathBuf) -> Result<Self, ToydbError> {
@@ -183,106 +176,75 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
     }
 
     fn is_dirty(&self) -> bool {
-        self.is_dirty
+        self.state.is_dirty()
     }
 
-    fn get_relation_mut<M: Model>(&mut self) -> &mut Vec<M>
+    fn get_relation_mut<M: Model>(&mut self) -> &mut Relation<M>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         let state = &mut self.state;
-        <State as GetRelation<M>>::get_rel_mut(state)
+        <S as GetRelation<M>>::get_rel_mut(state)
     }
 
-    fn get_relation<M: Model>(&self) -> &[M]
+    fn get_relation<M: Model>(&self) -> &Relation<M>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         let state = &self.state;
-        <State as GetRelation<M>>::get_rel(state)
+        <S as GetRelation<M>>::get_rel(state)
     }
 
     fn insert<M: Model>(&mut self, model: M) -> Result<M, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         let relation = self.get_relation_mut::<M>();
-
-        let id = model.id();
-        let is_duplicated = relation.iter().find(|m| m.id() == id).is_some();
-        if is_duplicated {
-            return Err(ToydbError::DuplicatedId {
-                id: format!("{:?}", id),
-                model_name: M::relation_name().to_owned(),
-            });
-        } else {
-            relation.push(model.clone());
-            self.is_dirty = true;
-            Ok(model)
-        }
+        relation.insert(model)
     }
 
     fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         let relation = self.get_relation::<M>();
-        let maybe_record = relation.iter().find(|m| m.id() == id).cloned();
-        Ok(maybe_record)
+        relation.find(id)
     }
 
     fn all<M: Model>(&self) -> Result<Vec<M>, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
-        let records = self.get_relation::<M>().to_vec();
-        Ok(records)
+        let relation = self.get_relation::<M>();
+        relation.all()
     }
 
     pub fn count<M: Model>(&self) -> Result<usize, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
-        Ok(self.get_relation::<M>().len())
+        let relation = self.get_relation::<M>();
+        relation.count()
     }
 
     fn update<M: Model>(&mut self, new_model: M) -> Result<(), ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         let relation = self.get_relation_mut::<M>();
-
-        let id = new_model.id();
-        if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
-            *m = new_model;
-            self.is_dirty = true;
-            Ok(())
-        } else {
-            Err(ToydbError::NotFound {
-                id: format!("{:?}", id),
-                model_name: M::relation_name().to_owned(),
-            })
-        }
+        relation.update(new_model)
     }
 
     fn delete<M: Model>(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError>
     where
-        State: GetRelation<M>,
+        S: GetRelation<M>,
     {
         let relation = self.get_relation_mut::<M>();
-
-        let index = relation.iter().position(|m| m.id() == id);
-        if let Some(index) = index {
-            let record = relation.remove(index);
-            self.is_dirty = true;
-            Ok(Some(record))
-        } else {
-            Ok(None)
-        }
+        relation.delete(id)
     }
 }
 
-impl<State: Default + Debug + Serialize + DeserializeOwned> Drop for InnerToydb<State> {
+impl<S: State> Drop for InnerToydb<S> {
     fn drop(&mut self) {
         if self.is_dirty() {
             if let Err(err) = self.flush() {
