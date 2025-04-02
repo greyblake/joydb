@@ -1,8 +1,7 @@
-use crate::traits::Model;
-
-use serde::de::{SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
+
+use crate::ToydbError;
+use crate::traits::Model;
 
 pub struct Relation<M: Model> {
     // We ignore meta while serializing and deserializing.
@@ -12,7 +11,87 @@ pub struct Relation<M: Model> {
     pub(crate) models: Vec<M>,
 }
 
-impl<M: Model> Relation<M> {}
+impl<M: Model> Relation<M> {
+    /*
+
+    fn insert(&mut self, model: M) -> Result<M, ToydbError> {
+        let id = model.id();
+        let is_duplicated = self.models
+            .iter().find(|m| m.id() == id).is_some();
+        if is_duplicated {
+            return Err(ToydbError::DuplicatedId {
+                id: format!("{:?}", id),
+                model_name: base_type_name::<M>().to_owned(),
+            });
+        } else {
+            relation.push(model.clone());
+            self.is_dirty = true;
+            Ok(model)
+        }
+    }
+    */
+
+    /*
+    fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let relation = self.get_relation::<M>();
+        let maybe_record = relation.iter().find(|m| m.id() == id).cloned();
+        Ok(maybe_record)
+    }
+
+    fn all<M: Model>(&self) -> Result<Vec<M>, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let records = self.get_relation::<M>().to_vec();
+        Ok(records)
+    }
+
+    pub fn count<M: Model>(&self) -> Result<usize, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        Ok(self.get_relation::<M>().len())
+    }
+
+    fn update<M: Model>(&mut self, new_model: M) -> Result<(), ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let relation = self.get_relation_mut::<M>();
+
+        let id = new_model.id();
+        if let Some(m) = relation.iter_mut().find(|m| m.id() == id) {
+            *m = new_model;
+            self.is_dirty = true;
+            Ok(())
+        } else {
+            Err(ToydbError::NotFound {
+                id: format!("{:?}", id),
+                model_name: base_type_name::<M>().to_owned(),
+            })
+        }
+    }
+
+    fn delete<M: Model>(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError>
+    where
+        State: GetRelation<M>,
+    {
+        let relation = self.get_relation_mut::<M>();
+
+        let index = relation.iter().position(|m| m.id() == id);
+        if let Some(index) = index {
+            let record = relation.remove(index);
+            self.is_dirty = true;
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
+    }
+    */
+}
 
 /// Metadata for the relation.
 /// It's not serialized or persisted. They meant to exist only in memory.
@@ -61,6 +140,10 @@ mod tests {
 
         fn id(&self) -> &Self::Id {
             &self.id
+        }
+
+        fn relation_name() -> &'static str {
+            "Post"
         }
     }
 

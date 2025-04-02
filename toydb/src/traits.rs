@@ -7,6 +7,8 @@ pub trait Model: Clone + Serialize + for<'de> Deserialize<'de> {
     type Id: Debug + Clone + Eq;
 
     fn id(&self) -> &Self::Id;
+
+    fn relation_name() -> &'static str;
 }
 
 /// A utility trait that implemented by a state that can store a relation of a model.

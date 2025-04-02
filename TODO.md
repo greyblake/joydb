@@ -44,3 +44,5 @@
     - `shamdb` (Sham DB)
     - `bogusdb` (Bogus)
     - `notdb`, `keindb`
+    - `undb`,
+    - `neverdb`

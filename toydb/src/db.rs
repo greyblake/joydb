@@ -183,7 +183,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
     }
 
     fn is_dirty(&self) -> bool {
-        self.is_dirty()
+        self.is_dirty
     }
 
     fn get_relation_mut<M: Model>(&mut self) -> &mut Vec<M>
@@ -213,7 +213,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         if is_duplicated {
             return Err(ToydbError::DuplicatedId {
                 id: format!("{:?}", id),
-                model_name: base_type_name::<M>().to_owned(),
+                model_name: M::relation_name().to_owned(),
             });
         } else {
             relation.push(model.clone());
@@ -260,7 +260,7 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> InnerToydb<State> {
         } else {
             Err(ToydbError::NotFound {
                 id: format!("{:?}", id),
-                model_name: base_type_name::<M>().to_owned(),
+                model_name: M::relation_name().to_owned(),
             })
         }
     }
@@ -290,9 +290,4 @@ impl<State: Default + Debug + Serialize + DeserializeOwned> Drop for InnerToydb<
             }
         }
     }
-}
-
-fn base_type_name<T>() -> &'static str {
-    let full_name = std::any::type_name::<T>();
-    full_name.split_terminator("::").last().unwrap()
 }
