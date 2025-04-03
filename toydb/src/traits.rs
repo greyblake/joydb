@@ -30,11 +30,12 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
     fn reset_dirty(&mut self);
 }
 
-pub trait Adapter<S: State> {
-    fn read(&self, path: &Path) -> S;
-    fn write(&self, path: &Path, state: S);
+pub trait Adapter {
+    fn read<S: State>(path: &Path) -> S;
+    fn write<S: State>(path: &Path, state: &S);
 }
 
+/*
 /// The idea behind this trait is to allow storing relations in separate files.
 ///
 /// For example, if you have a `User` model and a `Post` model, you can store
@@ -50,3 +51,4 @@ pub trait RelationAdapter<M: Model> {
     // TODO: Make it return Result
     fn serialize(&self, models: Vec<M>) -> Vec<u8>;
 }
+*/

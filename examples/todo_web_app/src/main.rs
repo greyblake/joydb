@@ -6,7 +6,7 @@ use axum::{
 };
 use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
-use toydb::{Model, Toydb, define_state};
+use toydb::{JsonAdapter, Model, Toydb, define_state};
 use uuid::Uuid;
 
 #[tokio::main]
@@ -57,7 +57,7 @@ define_state!(
     models: [Todo],
 );
 
-type Db = Toydb<DbState>;
+type Db = Toydb<DbState, JsonAdapter>;
 
 // --- HANDLERS ---
 

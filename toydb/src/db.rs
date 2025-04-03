@@ -1,7 +1,7 @@
-use crate::traits::{GetRelation, Model};
+use crate::traits::{Adapter, GetRelation, Model};
 use crate::{Relation, State, ToydbError};
-use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
+use std::marker::PhantomData;
 use std::ops::Drop;
 use std::{
     path::PathBuf,
@@ -21,13 +21,13 @@ use std::{
 /// | Delete    | [`delete`](Self::delete)                                         |
 ///
 #[derive(Debug)]
-pub struct Toydb<S: Default + Debug + Serialize + DeserializeOwned + State> {
-    inner: Arc<Mutex<InnerToydb<S>>>,
+pub struct Toydb<S: State, A: Adapter> {
+    inner: Arc<Mutex<InnerToydb<S, A>>>,
 }
 
 // Implement `Clone` manually, otherwise the compile requires a `State: Clone` bound.
 // But we deliberately don't want to be the inner state to implement `Clone`.
-impl<S: State> Clone for Toydb<S> {
+impl<S: State, A: Adapter> Clone for Toydb<S, A> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -35,10 +35,10 @@ impl<S: State> Clone for Toydb<S> {
     }
 }
 
-impl<S: State> Toydb<S> {
+impl<S: State, A: Adapter> Toydb<S, A> {
     pub fn open(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ToydbError> {
         let file_path = file_path.into();
-        let inner = InnerToydb::open(file_path)?;
+        let inner: InnerToydb<S, A> = InnerToydb::open(file_path)?;
         Ok(Self {
             inner: Arc::new(Mutex::new(inner)),
         })
@@ -130,12 +130,13 @@ impl<S: State> Toydb<S> {
 }
 
 #[derive(Debug)]
-struct InnerToydb<S: State> {
+struct InnerToydb<S: State, A: Adapter> {
     file_path: PathBuf,
     state: S,
+    adapter_phantom: PhantomData<A>,
 }
 
-impl<S: State> InnerToydb<S> {
+impl<S: State, A: Adapter> InnerToydb<S, A> {
     fn open(file_path: PathBuf) -> Result<Self, ToydbError> {
         let path = ::std::path::Path::new(&file_path);
         if path.exists() {
@@ -150,9 +151,12 @@ impl<S: State> InnerToydb<S> {
     }
 
     fn load(file_path: PathBuf) -> Result<Self, ToydbError> {
-        let content = std::fs::read_to_string(&file_path)?;
-        let state: S = serde_json::from_str(&content)?;
-        Ok(Self { file_path, state })
+        let state: S = A::read(&file_path);
+        Ok(Self {
+            file_path,
+            state,
+            adapter_phantom: PhantomData,
+        })
     }
 
     /// Write data to the file system if there are unsaved changes.
@@ -166,7 +170,11 @@ impl<S: State> InnerToydb<S> {
 
     fn new(file_path: PathBuf) -> Self {
         let state = S::default();
-        InnerToydb { file_path, state }
+        InnerToydb {
+            file_path,
+            state,
+            adapter_phantom: PhantomData,
+        }
     }
 
     fn create(file_path: PathBuf) -> Result<Self, ToydbError> {
@@ -176,8 +184,7 @@ impl<S: State> InnerToydb<S> {
     }
 
     fn save(&mut self) -> Result<(), ToydbError> {
-        let content = ::serde_json::to_string_pretty(&self.state)?;
-        ::std::fs::write(&self.file_path, content)?;
+        A::write(&self.file_path, &self.state);
         Ok(())
     }
 
@@ -250,7 +257,7 @@ impl<S: State> InnerToydb<S> {
     }
 }
 
-impl<S: State> Drop for InnerToydb<S> {
+impl<S: State, A: Adapter> Drop for InnerToydb<S, A> {
     fn drop(&mut self) {
         if let Err(err) = self.flush() {
             eprintln!("Failed to flush the database: {}", err);

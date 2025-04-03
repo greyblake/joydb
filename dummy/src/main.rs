@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{Model, Toydb};
+use toydb::{JsonAdapter, Model, Toydb};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {
@@ -18,7 +18,7 @@ toydb::define_state! {
     models: [User, Post],
 }
 
-type Db = Toydb<AppState>;
+type Db = Toydb<AppState, JsonAdapter>;
 
 const DB_FILE: &str = "dummy.json";
 

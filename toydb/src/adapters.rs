@@ -1,10 +1,10 @@
-use crate::traits::{Adapter, RelationAdapter, State};
+use crate::traits::{Adapter, State};
 use std::path::Path;
 
-struct JsonSingleFileAdapter;
+pub struct JsonAdapter;
 
-impl<S: State> Adapter<S> for JsonSingleFileAdapter {
-    fn read(&self, path: &Path) -> S {
+impl Adapter for JsonAdapter {
+    fn read<S: State>(path: &Path) -> S {
         use std::io::Read;
 
         let mut file = std::fs::File::open(path).expect("Failed to open file");
@@ -16,11 +16,11 @@ impl<S: State> Adapter<S> for JsonSingleFileAdapter {
         serde_json::from_str(&contents).expect("Failed to deserialize JSON")
     }
 
-    fn write(&self, path: &Path, state: S) {
+    fn write<S: State>(path: &Path, state: &S) {
         use std::io::Write;
 
         // TODO: Return Result
-        let json = serde_json::to_string_pretty(&state).expect("Failed to serialize JSON");
+        let json = serde_json::to_string_pretty(state).expect("Failed to serialize JSON");
         let mut file = std::fs::File::create(path).expect("Failed to create file");
 
         file.write_all(json.as_bytes())
