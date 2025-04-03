@@ -50,6 +50,9 @@
     - `maldb` (like opposite from DB in Esperanto, or bad in Spanish)
     - `nondb`
     - `minidb`
-    - `pseudb`
+    - `pseudb` (Pseudo DB)
     - `scratchdb`
     - `pocdb` - (Proof of Concept DB)
+    - `pundb`
+    - `nulldb`
+    - `zerodb`

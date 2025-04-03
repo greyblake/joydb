@@ -55,7 +55,7 @@ impl<S: State> Toydb<S> {
     ///
     /// # Example
     /// TODO
-    pub fn insert<M: Model>(&self, model: M) -> Result<M, ToydbError>
+    pub fn insert<M: Model>(&self, model: &M) -> Result<(), ToydbError>
     where
         S: GetRelation<M>,
     {
@@ -201,7 +201,7 @@ impl<S: State> InnerToydb<S> {
         <S as GetRelation<M>>::get_rel(state)
     }
 
-    fn insert<M: Model>(&mut self, model: M) -> Result<M, ToydbError>
+    fn insert<M: Model>(&mut self, model: &M) -> Result<(), ToydbError>
     where
         S: GetRelation<M>,
     {

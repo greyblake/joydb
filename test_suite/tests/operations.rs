@@ -18,8 +18,8 @@ fn should_insert_and_find() {
             name: "Bob".to_string(),
         };
 
-        db.insert(alice).unwrap();
-        db.insert(bob).unwrap();
+        db.insert(&alice).unwrap();
+        db.insert(&bob).unwrap();
 
         assert_eq!(db.count::<User>().unwrap(), 2);
         assert_eq!(db.count::<Post>().unwrap(), 0);
@@ -37,7 +37,7 @@ fn should_return_error_on_attempt_to_insert_record_with_duplicated_id() {
             name: "Alice".to_string(),
         };
         let alice_id = alice.id;
-        db.insert(alice).unwrap();
+        db.insert(&alice).unwrap();
 
         let another_alice = User {
             id: alice_id,
@@ -45,7 +45,7 @@ fn should_return_error_on_attempt_to_insert_record_with_duplicated_id() {
         };
 
         // Check the error
-        let err = db.insert(another_alice).unwrap_err();
+        let err = db.insert(&another_alice).unwrap_err();
         assert!(matches!(err, ToydbError::DuplicatedId { .. }));
         assert_eq!(
             err.to_string(),
@@ -68,7 +68,7 @@ fn should_update() {
             name: "Alice".to_string(),
         };
         let alice_id = alice.id;
-        db.insert(alice).unwrap();
+        db.insert(&alice).unwrap();
 
         let alice = db.find::<User>(&alice_id).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");

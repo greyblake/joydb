@@ -30,18 +30,18 @@ fn main() {
     {
         let db = Db::open(DB_FILE).unwrap();
 
-        db.insert(User {
+        db.insert(&User {
             id: 1,
             name: "Alice".to_owned(),
         })
         .unwrap();
-        db.insert(User {
+        db.insert(&User {
             id: 2,
             name: "Bob".to_owned(),
         })
         .unwrap();
 
-        db.insert(Post {
+        db.insert(&Post {
             id: 1,
             title: "Hello, world!".to_owned(),
         })

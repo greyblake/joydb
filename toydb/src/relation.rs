@@ -37,10 +37,7 @@ impl<M: Model> Relation<M> {
         }
     }
 
-    // TODO:
-    // - Change to `model: &M`, don't take ownership
-    // - Don't return the model, return `()`.
-    pub(crate) fn insert(&mut self, model: M) -> Result<M, ToydbError> {
+    pub(crate) fn insert(&mut self, model: &M) -> Result<(), ToydbError> {
         let id = model.id();
         let is_duplicated = self.models.iter().find(|m| m.id() == id).is_some();
         if is_duplicated {
@@ -51,7 +48,7 @@ impl<M: Model> Relation<M> {
         } else {
             self.models.push(model.clone());
             self.meta.is_dirty = true;
-            Ok(model)
+            Ok(())
         }
     }
 
@@ -235,7 +232,7 @@ mod tests {
                 id: 13,
                 title: "Thirteen".to_string(),
             };
-            relation.insert(post.clone()).unwrap();
+            relation.insert(&post).unwrap();
 
             assert_eq!(relation.models.len(), 3);
             assert_eq!(relation.models[2], post);
@@ -249,13 +246,13 @@ mod tests {
                 id: 777,
                 title: "First".to_string(),
             };
-            relation.insert(post.clone()).unwrap();
+            relation.insert(&post).unwrap();
 
             let another_post = Post {
                 id: 777,
                 title: "Another First".to_string(),
             };
-            let err = relation.insert(another_post.clone()).unwrap_err();
+            let err = relation.insert(&another_post).unwrap_err();
 
             assert!(matches!(err, ToydbError::DuplicatedId { .. }));
             assert_eq!(

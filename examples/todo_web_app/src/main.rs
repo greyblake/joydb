@@ -73,13 +73,12 @@ async fn index(State(db): State<Db>) -> impl IntoResponse {
 
 // Handler for adding a new todo
 async fn add_todo(State(db): State<Db>, Form(new_todo): Form<NewTodo>) -> impl IntoResponse {
-    db.insert(Todo {
+    let new_todo = Todo {
         id: Uuid::new_v4(),
         name: new_todo.name,
         completed: false,
-    })
-    .unwrap();
-
+    };
+    db.insert(&new_todo).unwrap();
     axum::response::Redirect::to("/")
 }
 
