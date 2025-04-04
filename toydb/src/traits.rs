@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use crate::State;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::path::Path;
 
@@ -22,12 +23,6 @@ pub trait GetRelation<M: Model> {
     fn get_rel_mut(&mut self) -> &mut Relation<M>;
 
     fn get_rel(&self) -> &Relation<M>;
-}
-
-pub trait State: Default + Debug + Serialize + DeserializeOwned {
-    fn is_dirty(&self) -> bool;
-
-    fn reset_dirty(&mut self);
 }
 
 pub trait Adapter {

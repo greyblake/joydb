@@ -9,6 +9,7 @@ pub use adapters::JsonAdapter;
 pub use db::Toydb;
 pub use error::ToydbError;
 pub use relation::Relation;
-pub use traits::{GetRelation, Model, State};
+pub use state::State;
+pub use traits::{GetRelation, Model};
 
 pub use toydb_macros::Model;

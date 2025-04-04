@@ -1,3 +1,12 @@
+use serde::{Serialize, de::DeserializeOwned};
+use std::fmt::Debug;
+
+pub trait State: Default + Debug + Serialize + DeserializeOwned {
+    fn is_dirty(&self) -> bool;
+
+    fn reset_dirty(&mut self);
+}
+
 #[macro_export]
 macro_rules! define_state {
     (

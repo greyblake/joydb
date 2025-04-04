@@ -1,5 +1,5 @@
 use crate::traits::{Adapter, GetRelation, Model};
-use crate::{Relation, State, ToydbError};
+use crate::{Relation, ToydbError, state::State};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::Drop;
