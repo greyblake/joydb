@@ -1,4 +1,5 @@
-use crate::traits::{Adapter, Model};
+use crate::traits::{Model};
+use crate::adapters::Adapter;
 use crate::{
     Relation, ToydbError,
     state::{GetRelation, State},
