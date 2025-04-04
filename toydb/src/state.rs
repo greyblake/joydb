@@ -1,10 +1,23 @@
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 
+use crate::{Model, Relation};
+
 pub trait State: Default + Debug + Serialize + DeserializeOwned {
     fn is_dirty(&self) -> bool;
 
     fn reset_dirty(&mut self);
+}
+
+/// A utility trait that implemented by a state that can store a relation of a model.
+#[diagnostic::on_unimplemented(
+    message = "State `{Self}` does not doest not implement `GetRelation<{M}>`.\nDid you forget to add `{M}` in the state definition?",
+    note = "Make sure that model `{M}` is listed in the state definition."
+)]
+pub trait GetRelation<M: Model> {
+    fn get_rel_mut(&mut self) -> &mut Relation<M>;
+
+    fn get_rel(&self) -> &Relation<M>;
 }
 
 #[macro_export]

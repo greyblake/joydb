@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::path::Path;
 
-use crate::{Relation, ToydbError};
+use crate::ToydbError;
 
 /// An identifiable model that can be stored in a database.
 pub trait Model: Clone + Serialize + for<'de> Deserialize<'de> {
@@ -12,17 +12,6 @@ pub trait Model: Clone + Serialize + for<'de> Deserialize<'de> {
     fn id(&self) -> &Self::Id;
 
     fn relation_name() -> &'static str;
-}
-
-/// A utility trait that implemented by a state that can store a relation of a model.
-#[diagnostic::on_unimplemented(
-    message = "State `{Self}` does not doest not implement `GetRelation<{M}>`.\nDid you forget to add `{M}` in the state definition?",
-    note = "Make sure that model `{M}` is listed in the state definition."
-)]
-pub trait GetRelation<M: Model> {
-    fn get_rel_mut(&mut self) -> &mut Relation<M>;
-
-    fn get_rel(&self) -> &Relation<M>;
 }
 
 pub trait Adapter {
