@@ -2,7 +2,6 @@ use crate::{ToydbError, state::State};
 use std::io::{Read, Write};
 use std::path::Path;
 
-
 pub trait Adapter {
     fn read<S: State>(path: &Path) -> Result<S, ToydbError>;
     fn write<S: State>(path: &Path, state: &S) -> Result<(), ToydbError>;
