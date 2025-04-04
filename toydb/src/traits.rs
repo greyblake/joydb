@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 use std::path::Path;
 
-use crate::Relation;
+use crate::{Relation, ToydbError};
 
 /// An identifiable model that can be stored in a database.
 pub trait Model: Clone + Serialize + for<'de> Deserialize<'de> {
@@ -31,8 +31,8 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
 }
 
 pub trait Adapter {
-    fn read<S: State>(path: &Path) -> S;
-    fn write<S: State>(path: &Path, state: &S);
+    fn read<S: State>(path: &Path) -> Result<S, ToydbError>;
+    fn write<S: State>(path: &Path, state: &S) -> Result<(), ToydbError>;
 }
 
 /*

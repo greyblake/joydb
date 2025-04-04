@@ -151,7 +151,7 @@ impl<S: State, A: Adapter> InnerToydb<S, A> {
     }
 
     fn load(file_path: PathBuf) -> Result<Self, ToydbError> {
-        let state: S = A::read(&file_path);
+        let state: S = A::read(&file_path)?;
         Ok(Self {
             file_path,
             state,
@@ -184,8 +184,7 @@ impl<S: State, A: Adapter> InnerToydb<S, A> {
     }
 
     fn save(&mut self) -> Result<(), ToydbError> {
-        A::write(&self.file_path, &self.state);
-        Ok(())
+        A::write(&self.file_path, &self.state)
     }
 
     fn is_dirty(&self) -> bool {
