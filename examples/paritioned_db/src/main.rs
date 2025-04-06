@@ -1,5 +1,3 @@
-use std::num::ParseIntError;
-
 use serde::{Deserialize, Serialize};
 use toydb::{Backend, Model, PartitionedDb, PartitionedJsonAdapter};
 
