@@ -141,7 +141,6 @@ impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> Toydb<S, UA, RA> {
 
 #[derive(Debug)]
 struct InnerToydb<S: State, UA: UnifiedAdapter, RA: RelationAdapter> {
-    file_path: PathBuf,
     state: S,
     backend: Backend<UA, RA>,
 }
@@ -169,12 +168,8 @@ impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> InnerToydb<S, UA, RA> {
                 }
             }
         }
-        let state = S::load_with_backend(&backend, &path)?;
-        Ok(Self {
-            file_path: path,
-            state,
-            backend,
-        })
+        let state = S::load_with_backend(&backend)?;
+        Ok(Self { state, backend })
     }
 
     /// Write data to the file system if there are unsaved changes.
@@ -186,13 +181,9 @@ impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> InnerToydb<S, UA, RA> {
         Ok(())
     }
 
-    fn new(backend: Backend<UA, RA>, file_path: PathBuf) -> Self {
+    fn new(backend: Backend<UA, RA>) -> Self {
         let state = S::default();
-        InnerToydb {
-            file_path,
-            state,
-            backend,
-        }
+        InnerToydb { state, backend }
     }
 
     fn create_with_backend(backend: Backend<UA, RA>, path: PathBuf) -> Result<Self, ToydbError> {
@@ -207,14 +198,13 @@ impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> InnerToydb<S, UA, RA> {
                 }
             }
         }
-        let mut db = Self::new(backend, path);
+        let mut db = Self::new(backend);
         db.save()?;
         Ok(db)
     }
 
     fn save(&mut self) -> Result<(), ToydbError> {
-        self.state
-            .write_with_backend(&self.backend, &self.file_path)
+        self.state.write_with_backend(&self.backend)
     }
 
     fn is_dirty(&self) -> bool {

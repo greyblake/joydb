@@ -23,7 +23,7 @@ type Db = PartitionedDb<AppState, PartitionedJsonAdapter>;
 const DB_DIR: &str = "db_data";
 
 fn main() {
-    let backend = Backend::Partitioned(PartitionedJsonAdapter);
+    let backend = Backend::Partitioned(PartitionedJsonAdapter::new(DB_DIR));
     let db = Db::open_with_backend(backend, DB_DIR).unwrap();
 
     db.insert(&User {

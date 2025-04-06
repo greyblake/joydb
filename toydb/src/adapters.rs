@@ -1,7 +1,7 @@
 use crate::{Model, Relation};
 use crate::{ToydbError, state::State};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub trait UnifiedAdapter {
     fn read<S: State>(&self) -> Result<S, ToydbError>;
@@ -15,8 +15,8 @@ pub trait UnifiedAdapter {
 ///
 /// But at the moment it's postponed.
 pub trait RelationAdapter {
-    fn read<M: Model>(base_path: &Path) -> Result<Relation<M>, ToydbError>;
-    fn write<M: Model>(base_path: &Path, relation: &Relation<M>) -> Result<(), ToydbError>;
+    fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
+    fn write<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError>;
 }
 
 pub struct UnifiedJsonAdapter {
@@ -46,22 +46,38 @@ impl UnifiedAdapter for UnifiedJsonAdapter {
     }
 }
 
-pub struct PartitionedJsonAdapter;
+pub struct PartitionedJsonAdapter {
+    dir_path: PathBuf,
+    //dir_existence_checked: bool,
+}
+
+impl PartitionedJsonAdapter {
+    pub fn new(dir_path: impl Into<PathBuf>) -> Self {
+        Self {
+            dir_path: dir_path.into(),
+            // dir_existence_checked: false,
+        }
+    }
+
+    fn relation_file_path<M: Model>(&self) -> PathBuf {
+        self.dir_path.join(format!("{}.json", M::relation_name()))
+    }
+}
 
 impl RelationAdapter for PartitionedJsonAdapter {
-    fn read<M: Model>(base_path: &Path) -> Result<Relation<M>, ToydbError> {
-        let path = base_path.join(format!("{}.json", M::relation_name()));
-        let mut file = std::fs::File::open(&path)?;
+    fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
+        let file_path = self.relation_file_path::<M>();
+        let mut file = std::fs::File::open(&file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let relation = serde_json::from_str(&contents)?;
         Ok(relation)
     }
 
-    fn write<M: Model>(base_path: &Path, relation: &Relation<M>) -> Result<(), ToydbError> {
-        let path = base_path.join(format!("{}.json", M::relation_name()));
+    fn write<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError> {
+        let file_path = self.relation_file_path::<M>();
         let json = serde_json::to_string_pretty(relation)?;
-        let mut file = std::fs::File::create(&path)?;
+        let mut file = std::fs::File::create(&file_path)?;
         file.write_all(json.as_bytes())?;
         Ok(())
     }
@@ -81,11 +97,11 @@ impl UnifiedAdapter for NeverAdapter {
 }
 
 impl RelationAdapter for NeverAdapter {
-    fn read<M: Model>(_path: &Path) -> Result<Relation<M>, ToydbError> {
+    fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
         panic!("NeverAdapter is not meant to be used as RelationAdapter to read.");
     }
 
-    fn write<M: Model>(_path: &Path, _relation: &Relation<M>) -> Result<(), ToydbError> {
+    fn write<M: Model>(&self, _relation: &Relation<M>) -> Result<(), ToydbError> {
         panic!("NeverAdapter is not meant to be used as RelationAdapter to write.");
     }
 }
