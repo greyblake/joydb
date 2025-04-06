@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
-    let backend = toydb::Backend::Unified(UnifiedJsonAdapter);
+    let backend = toydb::Backend::Unified(UnifiedJsonAdapter::new(DB_PATH));
     let db = Db::open_with_backend(backend, DB_PATH).unwrap();
 
     // Create an Axum router with routes

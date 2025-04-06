@@ -1,11 +1,11 @@
 use crate::{Model, Relation};
 use crate::{ToydbError, state::State};
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub trait UnifiedAdapter {
-    fn read<S: State>(path: &Path) -> Result<S, ToydbError>;
-    fn write<S: State>(path: &Path, state: &S) -> Result<(), ToydbError>;
+    fn read<S: State>(&self) -> Result<S, ToydbError>;
+    fn write<S: State>(&self, state: &S) -> Result<(), ToydbError>;
 }
 
 /// The idea behind this trait is to allow storing relations in separate files.
@@ -19,20 +19,28 @@ pub trait RelationAdapter {
     fn write<M: Model>(base_path: &Path, relation: &Relation<M>) -> Result<(), ToydbError>;
 }
 
-pub struct UnifiedJsonAdapter;
+pub struct UnifiedJsonAdapter {
+    path: PathBuf,
+}
+
+impl UnifiedJsonAdapter {
+    pub fn new(path: impl Into<PathBuf>) -> Self {
+        Self { path: path.into() }
+    }
+}
 
 impl UnifiedAdapter for UnifiedJsonAdapter {
-    fn read<S: State>(path: &Path) -> Result<S, ToydbError> {
-        let mut file = std::fs::File::open(path)?;
+    fn read<S: State>(&self) -> Result<S, ToydbError> {
+        let mut file = std::fs::File::open(&self.path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let state = serde_json::from_str(&contents)?;
         Ok(state)
     }
 
-    fn write<S: State>(path: &Path, state: &S) -> Result<(), ToydbError> {
+    fn write<S: State>(&self, state: &S) -> Result<(), ToydbError> {
         let json = serde_json::to_string_pretty(state)?;
-        let mut file = std::fs::File::create(path)?;
+        let mut file = std::fs::File::create(&self.path)?;
         file.write_all(json.as_bytes())?;
         Ok(())
     }
@@ -63,22 +71,22 @@ impl RelationAdapter for PartitionedJsonAdapter {
 pub struct NeverAdapter;
 
 impl UnifiedAdapter for NeverAdapter {
-    fn read<S: State>(_path: &Path) -> Result<S, ToydbError> {
-        panic!("NeverAdapter is not meant to be used");
+    fn read<S: State>(&self) -> Result<S, ToydbError> {
+        panic!("NeverAdapter is not meant to be used as UnifiedAdapter to read.");
     }
 
-    fn write<S: State>(_path: &Path, _state: &S) -> Result<(), ToydbError> {
-        panic!("NeverAdapter is not meant to be used");
+    fn write<S: State>(&self, _state: &S) -> Result<(), ToydbError> {
+        panic!("NeverAdapter is not meant to be used as UnifiedAdapter to write.");
     }
 }
 
 impl RelationAdapter for NeverAdapter {
     fn read<M: Model>(_path: &Path) -> Result<Relation<M>, ToydbError> {
-        panic!("NeverAdapter is not meant to be used");
+        panic!("NeverAdapter is not meant to be used as RelationAdapter to read.");
     }
 
     fn write<M: Model>(_path: &Path, _relation: &Relation<M>) -> Result<(), ToydbError> {
-        panic!("NeverAdapter is not meant to be used");
+        panic!("NeverAdapter is not meant to be used as RelationAdapter to write.");
     }
 }
 

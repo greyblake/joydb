@@ -17,7 +17,7 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         path: &std::path::Path,
     ) -> Result<(), crate::ToydbError> {
         match backend {
-            Backend::Unified(_adapter) => UA::write(path, self),
+            Backend::Unified(unified_adapter) => unified_adapter.write(self),
             Backend::Partitioned(_adapter) => self.write_relations::<RA>(path),
         }
     }
@@ -32,7 +32,7 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         path: &std::path::Path,
     ) -> Result<Self, crate::ToydbError> {
         match backend {
-            Backend::Unified(_adapter) => UA::read(path),
+            Backend::Unified(unified_adapter) => unified_adapter.read(),
             Backend::Partitioned(_adapter) => Self::load_relations::<RA>(path),
         }
     }
