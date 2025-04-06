@@ -1,16 +1,18 @@
 use crate::adapters::{Backend, UnifiedAdapter};
-use crate::{Model, RelationAdapter};
+use crate::{Model, NeverAdapter, RelationAdapter};
 use crate::{
     Relation, ToydbError,
     state::{GetRelation, State},
 };
 use std::fmt::Debug;
-use std::marker::PhantomData;
 use std::ops::Drop;
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+
+pub type UnifiedDb<S, UA> = Toydb<S, UA, NeverAdapter>;
+pub type PartitionedDb<S, RA> = Toydb<S, NeverAdapter, RA>;
 
 /// A struct that represents a database.
 /// It's thread-safe and can be shared between multiple threads.
@@ -148,20 +150,28 @@ impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> InnerToydb<S, UA, RA> {
     fn open_with_backend(backend: Backend<UA, RA>, file_path: PathBuf) -> Result<Self, ToydbError> {
         let path = ::std::path::Path::new(&file_path);
         if path.exists() {
-            if path.is_file() {
-                Self::load(backend, file_path)
-            } else {
-                Err(ToydbError::NotFile(file_path))
-            }
+            Self::load(backend, file_path)
         } else {
             Self::create_with_backend(backend, file_path)
         }
     }
 
-    fn load(backend: Backend<UA, RA>, file_path: PathBuf) -> Result<Self, ToydbError> {
-        let state: S = UA::read(&file_path)?;
+    fn load(backend: Backend<UA, RA>, path: PathBuf) -> Result<Self, ToydbError> {
+        match &backend {
+            Backend::Unified(_unified_adapter) => {
+                if !path.is_file() {
+                    return Err(ToydbError::NotFile(path));
+                }
+            }
+            Backend::Partitioned(_relation_adapter) => {
+                if !path.is_dir() {
+                    return Err(ToydbError::NotDirectory(path));
+                }
+            }
+        }
+        let state = S::load_with_backend(&backend, &path)?;
         Ok(Self {
-            file_path,
+            file_path: path,
             state,
             backend,
         })
@@ -185,17 +195,26 @@ impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> InnerToydb<S, UA, RA> {
         }
     }
 
-    fn create_with_backend(
-        backend: Backend<UA, RA>,
-        file_path: PathBuf,
-    ) -> Result<Self, ToydbError> {
-        let mut db = Self::new(backend, file_path);
+    fn create_with_backend(backend: Backend<UA, RA>, path: PathBuf) -> Result<Self, ToydbError> {
+        match &backend {
+            Backend::Unified(_unified_adapter) => {
+                // nothing to do, the file will be created by adapter
+            }
+            Backend::Partitioned(_relation_adapter) => {
+                // Create the directory
+                if let Err(err) = std::fs::create_dir_all(&path) {
+                    return Err(ToydbError::Io(err));
+                }
+            }
+        }
+        let mut db = Self::new(backend, path);
         db.save()?;
         Ok(db)
     }
 
     fn save(&mut self) -> Result<(), ToydbError> {
-        UA::write(&self.file_path, &self.state)
+        self.state
+            .write_with_backend(&self.backend, &self.file_path)
     }
 
     fn is_dirty(&self) -> bool {

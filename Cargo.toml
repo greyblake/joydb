@@ -6,5 +6,5 @@ members = [
     "toydb_macros",
     "dummy",
     "examples/todo_web_app",
-    "test_suite",
+    "test_suite", "examples/paritioned_db",
 ]

@@ -9,6 +9,9 @@ pub enum ToydbError {
     #[error("{0} is not a file")]
     NotFile(PathBuf),
 
+    #[error("{0} is not a directory")]
+    NotDirectory(PathBuf),
+
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 

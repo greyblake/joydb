@@ -38,8 +38,26 @@ impl UnifiedAdapter for UnifiedJsonAdapter {
     }
 }
 
-// Ideas for names:
-// - UnifiedStorage & PartitionedStorage
+pub struct PartitionedJsonAdapter;
+
+impl RelationAdapter for PartitionedJsonAdapter {
+    fn read<M: Model>(base_path: &Path) -> Result<Relation<M>, ToydbError> {
+        let path = base_path.join(format!("{}.json", M::relation_name()));
+        let mut file = std::fs::File::open(&path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let relation = serde_json::from_str(&contents)?;
+        Ok(relation)
+    }
+
+    fn write<M: Model>(base_path: &Path, relation: &Relation<M>) -> Result<(), ToydbError> {
+        let path = base_path.join(format!("{}.json", M::relation_name()));
+        let json = serde_json::to_string_pretty(relation)?;
+        let mut file = std::fs::File::create(&path)?;
+        file.write_all(json.as_bytes())?;
+        Ok(())
+    }
+}
 
 #[derive(Debug)]
 pub struct NeverAdapter;
