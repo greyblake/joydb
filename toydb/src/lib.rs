@@ -5,7 +5,7 @@ mod model;
 mod relation;
 mod state;
 
-pub use adapters::JsonAdapter;
+pub use adapters::{Backend, NeverAdapter, RelationAdapter, UnifiedAdapter, UnifiedJsonAdapter};
 pub use db::Toydb;
 pub use error::ToydbError;
 pub use model::Model;

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{JsonAdapter, Model, Toydb};
+use toydb::{Backend, Model, NeverAdapter, Toydb, UnifiedJsonAdapter};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {
@@ -18,7 +18,7 @@ toydb::define_state! {
     models: [User, Post],
 }
 
-type Db = Toydb<AppState, JsonAdapter>;
+type Db = Toydb<AppState, UnifiedJsonAdapter, NeverAdapter>;
 
 const DB_FILE: &str = "dummy.json";
 
@@ -28,7 +28,8 @@ fn main() {
 
     // Insert some data
     {
-        let db = Db::open(DB_FILE).unwrap();
+        let backend = Backend::Unified(UnifiedJsonAdapter);
+        let db = Db::open_with_backend(backend, DB_FILE).unwrap();
 
         db.insert(&User {
             id: 1,
@@ -51,7 +52,8 @@ fn main() {
 
     // Load the data back
     {
-        let db = Db::open(DB_FILE).unwrap();
+        let backend = Backend::Unified(UnifiedJsonAdapter);
+        let db = Db::open_with_backend(backend, DB_FILE).unwrap();
         let alice: User = db.find(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 

@@ -1,12 +1,45 @@
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 
-use crate::{Model, Relation};
+use crate::{
+    Model, Relation,
+    adapters::{Backend, RelationAdapter, UnifiedAdapter},
+};
 
 pub trait State: Default + Debug + Serialize + DeserializeOwned {
     fn is_dirty(&self) -> bool;
 
     fn reset_dirty(&mut self);
+
+    fn write_with_backend<UA: UnifiedAdapter, RA: RelationAdapter>(
+        &self,
+        backend: &Backend<UA, RA>,
+        path: &std::path::Path,
+    ) -> Result<(), crate::ToydbError> {
+        match backend {
+            Backend::Unified(adapter) => UA::write(path, self),
+            Backend::Partitioned(adapter) => self.write_relations::<RA>(path),
+        }
+    }
+
+    fn write_relations<RA: RelationAdapter>(
+        &self,
+        base_path: &std::path::Path,
+    ) -> Result<(), crate::ToydbError>;
+
+    fn load_with_backend<UA: UnifiedAdapter, RA: RelationAdapter>(
+        backend: &Backend<UA, RA>,
+        path: &std::path::Path,
+    ) -> Result<Self, crate::ToydbError> {
+        match backend {
+            Backend::Unified(adapter) => UA::read(path),
+            Backend::Partitioned(adapter) => Self::load_relations::<RA>(path),
+        }
+    }
+
+    fn load_relations<RA: RelationAdapter>(
+        base_path: &std::path::Path,
+    ) -> Result<Self, crate::ToydbError>;
 }
 
 /// A utility trait that implemented by a state that can store a relation of a model.
@@ -49,6 +82,26 @@ macro_rules! define_state {
                 $(
                     self.$model_type.reset_dirty();
                 )*
+            }
+
+            fn write_relations<RA: ::toydb::RelationAdapter>(&self, base_path: &std::path::Path) -> Result<(), ::toydb::ToydbError> {
+                $(
+                    {
+                        let relation = &self.$model_type;
+                        if relation.is_dirty() {
+                            RA::write(base_path, relation)?;
+                        }
+                    }
+                )*
+                Ok(())
+            }
+
+            fn load_relations<RA: ::toydb::RelationAdapter>(base_path: &std::path::Path) -> Result<Self, ::toydb::ToydbError> {
+                let mut state = Self::default();
+                $(
+                    state.$model_type = RA::read::<$model_type>(base_path)?;
+                )*
+                Ok(state)
             }
         }
 

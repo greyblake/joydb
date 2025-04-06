@@ -1,5 +1,5 @@
-use crate::Model;
-use crate::adapters::Adapter;
+use crate::adapters::{Backend, UnifiedAdapter};
+use crate::{Model, RelationAdapter};
 use crate::{
     Relation, ToydbError,
     state::{GetRelation, State},
@@ -25,13 +25,13 @@ use std::{
 /// | Delete    | [`delete`](Self::delete)                                         |
 ///
 #[derive(Debug)]
-pub struct Toydb<S: State, A: Adapter> {
-    inner: Arc<Mutex<InnerToydb<S, A>>>,
+pub struct Toydb<S: State, UA: UnifiedAdapter, RA: RelationAdapter> {
+    inner: Arc<Mutex<InnerToydb<S, UA, RA>>>,
 }
 
 // Implement `Clone` manually, otherwise the compile requires a `State: Clone` bound.
 // But we deliberately don't want to be the inner state to implement `Clone`.
-impl<S: State, A: Adapter> Clone for Toydb<S, A> {
+impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> Clone for Toydb<S, UA, RA> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -39,10 +39,14 @@ impl<S: State, A: Adapter> Clone for Toydb<S, A> {
     }
 }
 
-impl<S: State, A: Adapter> Toydb<S, A> {
-    pub fn open(file_path: impl Into<::std::path::PathBuf>) -> Result<Self, ToydbError> {
+impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> Toydb<S, UA, RA> {
+    // TODO: Pass backend here as a parameter!
+    pub fn open_with_backend(
+        backend: Backend<UA, RA>,
+        file_path: impl Into<::std::path::PathBuf>,
+    ) -> Result<Self, ToydbError> {
         let file_path = file_path.into();
-        let inner: InnerToydb<S, A> = InnerToydb::open(file_path)?;
+        let inner: InnerToydb<S, UA, RA> = InnerToydb::open_with_backend(backend, file_path)?;
         Ok(Self {
             inner: Arc::new(Mutex::new(inner)),
         })
@@ -134,32 +138,32 @@ impl<S: State, A: Adapter> Toydb<S, A> {
 }
 
 #[derive(Debug)]
-struct InnerToydb<S: State, A: Adapter> {
+struct InnerToydb<S: State, UA: UnifiedAdapter, RA: RelationAdapter> {
     file_path: PathBuf,
     state: S,
-    adapter_phantom: PhantomData<A>,
+    backend: Backend<UA, RA>,
 }
 
-impl<S: State, A: Adapter> InnerToydb<S, A> {
-    fn open(file_path: PathBuf) -> Result<Self, ToydbError> {
+impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> InnerToydb<S, UA, RA> {
+    fn open_with_backend(backend: Backend<UA, RA>, file_path: PathBuf) -> Result<Self, ToydbError> {
         let path = ::std::path::Path::new(&file_path);
         if path.exists() {
             if path.is_file() {
-                Self::load(file_path)
+                Self::load(backend, file_path)
             } else {
                 Err(ToydbError::NotFile(file_path))
             }
         } else {
-            Self::create(file_path)
+            Self::create_with_backend(backend, file_path)
         }
     }
 
-    fn load(file_path: PathBuf) -> Result<Self, ToydbError> {
-        let state: S = A::read(&file_path)?;
+    fn load(backend: Backend<UA, RA>, file_path: PathBuf) -> Result<Self, ToydbError> {
+        let state: S = UA::read(&file_path)?;
         Ok(Self {
             file_path,
             state,
-            adapter_phantom: PhantomData,
+            backend,
         })
     }
 
@@ -172,23 +176,26 @@ impl<S: State, A: Adapter> InnerToydb<S, A> {
         Ok(())
     }
 
-    fn new(file_path: PathBuf) -> Self {
+    fn new(backend: Backend<UA, RA>, file_path: PathBuf) -> Self {
         let state = S::default();
         InnerToydb {
             file_path,
             state,
-            adapter_phantom: PhantomData,
+            backend,
         }
     }
 
-    fn create(file_path: PathBuf) -> Result<Self, ToydbError> {
-        let mut db = Self::new(file_path);
+    fn create_with_backend(
+        backend: Backend<UA, RA>,
+        file_path: PathBuf,
+    ) -> Result<Self, ToydbError> {
+        let mut db = Self::new(backend, file_path);
         db.save()?;
         Ok(db)
     }
 
     fn save(&mut self) -> Result<(), ToydbError> {
-        A::write(&self.file_path, &self.state)
+        UA::write(&self.file_path, &self.state)
     }
 
     fn is_dirty(&self) -> bool {
@@ -260,7 +267,7 @@ impl<S: State, A: Adapter> InnerToydb<S, A> {
     }
 }
 
-impl<S: State, A: Adapter> Drop for InnerToydb<S, A> {
+impl<S: State, UA: UnifiedAdapter, RA: RelationAdapter> Drop for InnerToydb<S, UA, RA> {
     fn drop(&mut self) {
         if let Err(err) = self.flush() {
             eprintln!("Failed to flush the database: {}", err);

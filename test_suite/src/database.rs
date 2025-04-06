@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{JsonAdapter, Model, Toydb, define_state};
+use toydb::{Model, NeverAdapter, Toydb, UnifiedJsonAdapter, define_state};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
@@ -20,4 +20,4 @@ define_state! {
     models: [User, Post],
 }
 
-pub type Database = Toydb<DatabaseState, JsonAdapter>;
+pub type Database = Toydb<DatabaseState, UnifiedJsonAdapter, NeverAdapter>;
