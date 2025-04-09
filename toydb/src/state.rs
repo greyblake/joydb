@@ -17,11 +17,13 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
     ) -> Result<(), crate::ToydbError> {
         match backend {
             Backend::Unified(unified_adapter) => unified_adapter.write_state(self),
-            Backend::Partitioned(parititoned_adapter) => self.write_relations(parititoned_adapter),
+            Backend::Partitioned(parititoned_adapter) => {
+                self.write_with_partitioned_adapter(parititoned_adapter)
+            }
         }
     }
 
-    fn write_relations<PA: PartitionedAdapter>(
+    fn write_with_partitioned_adapter<PA: PartitionedAdapter>(
         &self,
         adapter: &PA,
     ) -> Result<(), crate::ToydbError>;
@@ -31,16 +33,15 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
     ) -> Result<Self, crate::ToydbError> {
         match backend {
             Backend::Unified(unified_adapter) => unified_adapter.read_state(),
-            Backend::Partitioned(adapter) => Self::load_relations_with_adapter(adapter),
+            Backend::Partitioned(adapter) => Self::load_with_partitioned_adapter(adapter),
         }
     }
 
-    // TODO: Rename to `load_with_paritioned_adapter`
-    fn load_relations_with_adapter<PA: PartitionedAdapter>(
+    fn load_with_partitioned_adapter<PA: PartitionedAdapter>(
         adapter: &PA,
     ) -> Result<Self, ToydbError>;
 
-    fn init_with_paritioned_adapter<PA: PartitionedAdapter>(
+    fn init_with_partitioned_adapter<PA: PartitionedAdapter>(
         adapter: &PA,
     ) -> Result<Self, ToydbError>;
 }
@@ -87,7 +88,7 @@ macro_rules! define_state {
                 )*
             }
 
-            fn write_relations<PA: ::toydb::PartitionedAdapter>(&self, adapter: &PA) -> Result<(), ::toydb::ToydbError> {
+            fn write_with_partitioned_adapter<PA: ::toydb::PartitionedAdapter>(&self, adapter: &PA) -> Result<(), ::toydb::ToydbError> {
                 $(
                     {
                         let relation = &self.$model_type;
@@ -99,7 +100,7 @@ macro_rules! define_state {
                 Ok(())
             }
 
-            fn load_relations_with_adapter<PA: ::toydb::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
+            fn load_with_partitioned_adapter<PA: ::toydb::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
                 let mut state = Self::default();
                 $(
                     state.$model_type = adapter.read_relation::<$model_type>()?;
@@ -107,7 +108,7 @@ macro_rules! define_state {
                 Ok(state)
             }
 
-            fn init_with_paritioned_adapter<PA: ::toydb::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
+            fn init_with_partitioned_adapter<PA: ::toydb::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
                 let mut state = Self::default();
                 $(
                     state.$model_type = adapter.init_relation::<$model_type>()?;
