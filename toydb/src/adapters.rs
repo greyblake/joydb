@@ -12,13 +12,6 @@ pub trait UnifiedAdapter {
     fn init_state<S: State>(&self) -> Result<S, ToydbError>;
 }
 
-// impl<UA: UnifiedAdapter> From<UA> for Backend<UA, NeverAdapter> {
-//     fn from(adapter: UA) -> Self {
-//         Self::Unified(adapter)
-//     }
-// }
-//
-
 /// The idea behind this trait is to allow storing relations in separate files.
 ///
 /// For example, if you have a `User` model and a `Post` model, you can store
@@ -36,11 +29,6 @@ pub trait PartitionedAdapter {
     fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
 }
 
-// impl<PA: PartitionedAdapter> From<PA> for Backend<NeverAdapter, PA> {
-//     fn from(adapter: PA) -> Self {
-//         Self::Partitioned(adapter)
-//     }
-// }
 
 // TODO: add `pretty` boolean?
 pub struct UnifiedJsonAdapter {
