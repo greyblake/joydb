@@ -4,8 +4,8 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 
 pub trait UnifiedAdapter {
-    fn read<S: State>(&self) -> Result<S, ToydbError>;
-    fn write<S: State>(&self, state: &S) -> Result<(), ToydbError>;
+    fn read_state<S: State>(&self) -> Result<S, ToydbError>;
+    fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError>;
 
     /// Is called only once when the database is opened or created.
     /// Usually the adapter should check if the files exist and if not, create them.
@@ -26,11 +26,9 @@ pub trait UnifiedAdapter {
 ///
 /// But at the moment it's postponed.
 pub trait PartitionedAdapter {
-    // TODO: Rename to `read_relation`?
-    fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
+    fn read_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
 
-    // TODO: Rename to `write_relation`?
-    fn write<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError>;
+    fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError>;
 
     fn init_state<S: State>(&self) -> Result<S, ToydbError>;
 
@@ -56,7 +54,7 @@ impl UnifiedJsonAdapter {
 }
 
 impl UnifiedAdapter for UnifiedJsonAdapter {
-    fn read<S: State>(&self) -> Result<S, ToydbError> {
+    fn read_state<S: State>(&self) -> Result<S, ToydbError> {
         let mut file = std::fs::File::open(&self.path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -64,7 +62,7 @@ impl UnifiedAdapter for UnifiedJsonAdapter {
         Ok(state)
     }
 
-    fn write<S: State>(&self, state: &S) -> Result<(), ToydbError> {
+    fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError> {
         let json = serde_json::to_string_pretty(state)?;
         let mut file = std::fs::File::create(&self.path)?;
         file.write_all(json.as_bytes())?;
@@ -78,11 +76,11 @@ impl UnifiedAdapter for UnifiedJsonAdapter {
                 return Err(ToydbError::NotFile(self.path.clone()));
             }
             // Otherwise read the state from the existing file
-            self.read()
+            self.read_state()
         } else {
             // If the file does not exist, create a new file with empty state
             let empty_state = S::default();
-            self.write(&empty_state)?;
+            self.write_state(&empty_state)?;
             Ok(empty_state)
         }
     }
@@ -105,7 +103,7 @@ impl PartitionedJsonAdapter {
 }
 
 impl PartitionedAdapter for PartitionedJsonAdapter {
-    fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
+    fn read_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
         let file_path = self.relation_file_path::<M>();
         let mut file = std::fs::File::open(&file_path)?;
         let mut contents = String::new();
@@ -114,7 +112,7 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
         Ok(relation)
     }
 
-    fn write<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError> {
+    fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError> {
         let file_path = self.relation_file_path::<M>();
         let json = serde_json::to_string_pretty(relation)?;
         let mut file = std::fs::File::create(&file_path)?;
@@ -130,11 +128,11 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
                 return Err(ToydbError::NotFile(file_path));
             }
             // Otherwise read the relation from the existing file
-            self.read()
+            self.read_relation()
         } else {
             // If the file does not exist, create a new file with empty relation
             let empty_relation = Relation::<M>::default();
-            self.write(&empty_relation)?;
+            self.write_relation(&empty_relation)?;
             Ok(empty_relation)
         }
     }
@@ -157,11 +155,11 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
 pub struct NeverAdapter;
 
 impl UnifiedAdapter for NeverAdapter {
-    fn read<S: State>(&self) -> Result<S, ToydbError> {
+    fn read_state<S: State>(&self) -> Result<S, ToydbError> {
         panic!("NeverAdapter is not meant to be used as UnifiedAdapter to read.");
     }
 
-    fn write<S: State>(&self, _state: &S) -> Result<(), ToydbError> {
+    fn write_state<S: State>(&self, _state: &S) -> Result<(), ToydbError> {
         panic!("NeverAdapter is not meant to be used as UnifiedAdapter to write.");
     }
 
@@ -171,11 +169,11 @@ impl UnifiedAdapter for NeverAdapter {
 }
 
 impl PartitionedAdapter for NeverAdapter {
-    fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
+    fn read_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
         panic!("NeverAdapter is not meant to be used as PartitionedAdapter to read.");
     }
 
-    fn write<M: Model>(&self, _relation: &Relation<M>) -> Result<(), ToydbError> {
+    fn write_relation<M: Model>(&self, _relation: &Relation<M>) -> Result<(), ToydbError> {
         panic!("NeverAdapter is not meant to be used as PartitionedAdapter to write.");
     }
 

@@ -16,7 +16,7 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         backend: &Backend<UA, PA>,
     ) -> Result<(), crate::ToydbError> {
         match backend {
-            Backend::Unified(unified_adapter) => unified_adapter.write(self),
+            Backend::Unified(unified_adapter) => unified_adapter.write_state(self),
             Backend::Partitioned(parititoned_adapter) => self.write_relations(parititoned_adapter),
         }
     }
@@ -30,7 +30,7 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         backend: &Backend<UA, PA>,
     ) -> Result<Self, crate::ToydbError> {
         match backend {
-            Backend::Unified(unified_adapter) => unified_adapter.read(),
+            Backend::Unified(unified_adapter) => unified_adapter.read_state(),
             Backend::Partitioned(adapter) => Self::load_relations_with_adapter(adapter),
         }
     }
@@ -92,7 +92,7 @@ macro_rules! define_state {
                     {
                         let relation = &self.$model_type;
                         if relation.is_dirty() {
-                            adapter.write(relation)?;
+                            adapter.write_relation(relation)?;
                         }
                     }
                 )*
@@ -102,7 +102,7 @@ macro_rules! define_state {
             fn load_relations_with_adapter<PA: ::toydb::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
                 let mut state = Self::default();
                 $(
-                    state.$model_type = adapter.read::<$model_type>()?;
+                    state.$model_type = adapter.read_relation::<$model_type>()?;
                 )*
                 Ok(state)
             }
