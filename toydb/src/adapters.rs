@@ -191,3 +191,12 @@ pub enum Backend<UA: UnifiedAdapter, PA: PartitionedAdapter> {
     Unified(UA),
     Partitioned(PA),
 }
+
+impl<UA: UnifiedAdapter, PA: PartitionedAdapter> Backend<UA, PA> {
+    pub(crate) fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+        match self {
+            Backend::Unified(unified_adapter) => unified_adapter.init_state::<S>(),
+            Backend::Partitioned(partitioned_adapter) => partitioned_adapter.init_state::<S>(),
+        }
+    }
+}

@@ -139,10 +139,7 @@ struct InnerToydb<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> {
 
 impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> InnerToydb<S, UA, PA> {
     fn open_with_backend(backend: Backend<UA, PA>) -> Result<Self, ToydbError> {
-        let state = match &backend {
-            Backend::Unified(unified_adapter) => unified_adapter.init_state::<S>(),
-            Backend::Partitioned(paritioned_adapter) => paritioned_adapter.init_state::<S>(),
-        }?;
+        let state = backend.init_state::<S>()?;
         Ok(Self { state, backend })
     }
 
