@@ -24,7 +24,7 @@ const DB_DIR: &str = "db_data";
 
 fn main() {
     let backend = Backend::Partitioned(PartitionedJsonAdapter::new(DB_DIR));
-    let db = Db::open_with_backend(backend, DB_DIR).unwrap();
+    let db = Db::open_with_backend(backend).unwrap();
 
     db.insert(&User {
         id: 1,

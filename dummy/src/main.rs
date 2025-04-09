@@ -29,7 +29,7 @@ fn main() {
     // Insert some data
     {
         let backend = Backend::Unified(UnifiedJsonAdapter::new(DB_FILE));
-        let db = Db::open_with_backend(backend, DB_FILE).unwrap();
+        let db = Db::open_with_backend(backend).unwrap();
 
         db.insert(&User {
             id: 1,
@@ -53,7 +53,7 @@ fn main() {
     // Load the data back
     {
         let backend = Backend::Unified(UnifiedJsonAdapter::new(DB_FILE));
-        let db = Db::open_with_backend(backend, DB_FILE).unwrap();
+        let db = Db::open_with_backend(backend).unwrap();
         let alice: User = db.find(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 

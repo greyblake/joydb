@@ -2,7 +2,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 
 use crate::{
-    Model, Relation,
+    Model, Relation, ToydbError,
     adapters::{Backend, RelationAdapter, UnifiedAdapter},
 };
 
@@ -32,9 +32,10 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         }
     }
 
-    fn load_relations_with_adapter<RA: RelationAdapter>(
-        adapter: &RA,
-    ) -> Result<Self, crate::ToydbError>;
+    // TODO: Rename to `load_with_paritioned_adapter`
+    fn load_relations_with_adapter<RA: RelationAdapter>(adapter: &RA) -> Result<Self, ToydbError>;
+
+    fn init_with_paritioned_adapter<PA: RelationAdapter>(adapter: &PA) -> Result<Self, ToydbError>;
 }
 
 /// A utility trait that implemented by a state that can store a relation of a model.
@@ -95,6 +96,14 @@ macro_rules! define_state {
                 let mut state = Self::default();
                 $(
                     state.$model_type = adapter.read::<$model_type>()?;
+                )*
+                Ok(state)
+            }
+
+            fn init_with_paritioned_adapter<PA: ::toydb::RelationAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
+                let mut state = Self::default();
+                $(
+                    state.$model_type = adapter.init_relation::<$model_type>()?;
                 )*
                 Ok(state)
             }

@@ -6,7 +6,18 @@ use std::path::PathBuf;
 pub trait UnifiedAdapter {
     fn read<S: State>(&self) -> Result<S, ToydbError>;
     fn write<S: State>(&self, state: &S) -> Result<(), ToydbError>;
+
+    /// Is called only once when the database is opened or created.
+    /// Usually the adapter should check if the files exist and if not, create them.
+    fn init_state<S: State>(&self) -> Result<S, ToydbError>;
 }
+
+// impl<UA: UnifiedAdapter> From<UA> for Backend<UA, NeverAdapter> {
+//     fn from(adapter: UA) -> Self {
+//         Self::Unified(adapter)
+//     }
+// }
+//
 
 /// The idea behind this trait is to allow storing relations in separate files.
 ///
@@ -14,11 +25,27 @@ pub trait UnifiedAdapter {
 /// `User` models in `users.json` and `Post` models in `posts.json`.
 ///
 /// But at the moment it's postponed.
+// TODO: Rename to `PartitionedAdapter`
 pub trait RelationAdapter {
+    // TODO: Rename to `read_relation`?
     fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
+
+    // TODO: Rename to `write_relation`?
     fn write<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError>;
+
+    fn init_state<S: State>(&self) -> Result<S, ToydbError>;
+
+    // Is meant to be called by State, because State knows concrete type of M.
+    fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
 }
 
+// impl<RA: RelationAdapter> From<RA> for Backend<NeverAdapter, RA> {
+//     fn from(adapter: RA) -> Self {
+//         Self::Partitioned(adapter)
+//     }
+// }
+
+// TODO: add `pretty` boolean?
 pub struct UnifiedJsonAdapter {
     path: PathBuf,
 }
@@ -44,18 +71,32 @@ impl UnifiedAdapter for UnifiedJsonAdapter {
         file.write_all(json.as_bytes())?;
         Ok(())
     }
+
+    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+        if self.path.exists() {
+            if !self.path.is_file() {
+                // If the path exists but is not a file, then return an error
+                return Err(ToydbError::NotFile(self.path.clone()));
+            }
+            // Otherwise read the state from the existing file
+            self.read()
+        } else {
+            // If the file does not exist, create a new file with empty state
+            let empty_state = S::default();
+            self.write(&empty_state)?;
+            Ok(empty_state)
+        }
+    }
 }
 
 pub struct PartitionedJsonAdapter {
     dir_path: PathBuf,
-    //dir_existence_checked: bool,
 }
 
 impl PartitionedJsonAdapter {
     pub fn new(dir_path: impl Into<PathBuf>) -> Self {
         Self {
             dir_path: dir_path.into(),
-            // dir_existence_checked: false,
         }
     }
 
@@ -81,6 +122,36 @@ impl RelationAdapter for PartitionedJsonAdapter {
         file.write_all(json.as_bytes())?;
         Ok(())
     }
+
+    fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
+        let file_path = self.relation_file_path::<M>();
+        if file_path.exists() {
+            if !file_path.is_file() {
+                // If the path exists but is not a file, then return an error
+                return Err(ToydbError::NotFile(file_path));
+            }
+            // Otherwise read the relation from the existing file
+            self.read()
+        } else {
+            // If the file does not exist, create a new file with empty relation
+            let empty_relation = Relation::<M>::default();
+            self.write(&empty_relation)?;
+            Ok(empty_relation)
+        }
+    }
+
+    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+        if self.dir_path.exists() {
+            if !self.dir_path.is_dir() {
+                return Err(ToydbError::NotDirectory(self.dir_path.clone()));
+            }
+        } else {
+            // Create a directory if it does not exist
+            std::fs::create_dir_all(&self.dir_path)?;
+        }
+
+        S::init_with_paritioned_adapter(self)
+    }
 }
 
 #[derive(Debug)]
@@ -94,6 +165,10 @@ impl UnifiedAdapter for NeverAdapter {
     fn write<S: State>(&self, _state: &S) -> Result<(), ToydbError> {
         panic!("NeverAdapter is not meant to be used as UnifiedAdapter to write.");
     }
+
+    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+        panic!("NeverAdapter is not meant to be used as UnifiedAdapter to init.");
+    }
 }
 
 impl RelationAdapter for NeverAdapter {
@@ -103,6 +178,14 @@ impl RelationAdapter for NeverAdapter {
 
     fn write<M: Model>(&self, _relation: &Relation<M>) -> Result<(), ToydbError> {
         panic!("NeverAdapter is not meant to be used as RelationAdapter to write.");
+    }
+
+    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+        panic!("NeverAdapter is not meant to be used as RelationAdapter to init_state.");
+    }
+
+    fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
+        panic!("NeverAdapter is not meant to be used as RelationAdapter to init relation.");
     }
 }
 
