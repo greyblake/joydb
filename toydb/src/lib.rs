@@ -6,7 +6,7 @@ mod relation;
 mod state;
 
 pub use adapters::{
-    Backend, NeverAdapter, PartitionedJsonAdapter, RelationAdapter, UnifiedAdapter,
+    Backend, NeverAdapter, PartitionedAdapter, PartitionedJsonAdapter, UnifiedAdapter,
     UnifiedJsonAdapter,
 };
 pub use db::{PartitionedDb, Toydb, UnifiedDb};

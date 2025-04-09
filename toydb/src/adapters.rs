@@ -25,8 +25,7 @@ pub trait UnifiedAdapter {
 /// `User` models in `users.json` and `Post` models in `posts.json`.
 ///
 /// But at the moment it's postponed.
-// TODO: Rename to `PartitionedAdapter`
-pub trait RelationAdapter {
+pub trait PartitionedAdapter {
     // TODO: Rename to `read_relation`?
     fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
 
@@ -39,8 +38,8 @@ pub trait RelationAdapter {
     fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
 }
 
-// impl<RA: RelationAdapter> From<RA> for Backend<NeverAdapter, RA> {
-//     fn from(adapter: RA) -> Self {
+// impl<PA: PartitionedAdapter> From<PA> for Backend<NeverAdapter, PA> {
+//     fn from(adapter: PA) -> Self {
 //         Self::Partitioned(adapter)
 //     }
 // }
@@ -105,7 +104,7 @@ impl PartitionedJsonAdapter {
     }
 }
 
-impl RelationAdapter for PartitionedJsonAdapter {
+impl PartitionedAdapter for PartitionedJsonAdapter {
     fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
         let file_path = self.relation_file_path::<M>();
         let mut file = std::fs::File::open(&file_path)?;
@@ -171,26 +170,26 @@ impl UnifiedAdapter for NeverAdapter {
     }
 }
 
-impl RelationAdapter for NeverAdapter {
+impl PartitionedAdapter for NeverAdapter {
     fn read<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as RelationAdapter to read.");
+        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to read.");
     }
 
     fn write<M: Model>(&self, _relation: &Relation<M>) -> Result<(), ToydbError> {
-        panic!("NeverAdapter is not meant to be used as RelationAdapter to write.");
+        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to write.");
     }
 
     fn init_state<S: State>(&self) -> Result<S, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as RelationAdapter to init_state.");
+        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to init_state.");
     }
 
     fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as RelationAdapter to init relation.");
+        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to init relation.");
     }
 }
 
 #[derive(Debug)]
-pub enum Backend<UA: UnifiedAdapter, RA: RelationAdapter> {
+pub enum Backend<UA: UnifiedAdapter, PA: PartitionedAdapter> {
     Unified(UA),
-    Partitioned(RA),
+    Partitioned(PA),
 }

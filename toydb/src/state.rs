@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use crate::{
     Model, Relation, ToydbError,
-    adapters::{Backend, RelationAdapter, UnifiedAdapter},
+    adapters::{Backend, PartitionedAdapter, UnifiedAdapter},
 };
 
 pub trait State: Default + Debug + Serialize + DeserializeOwned {
@@ -11,9 +11,9 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
 
     fn reset_dirty(&mut self);
 
-    fn write_with_backend<UA: UnifiedAdapter, RA: RelationAdapter>(
+    fn write_with_backend<UA: UnifiedAdapter, PA: PartitionedAdapter>(
         &self,
-        backend: &Backend<UA, RA>,
+        backend: &Backend<UA, PA>,
     ) -> Result<(), crate::ToydbError> {
         match backend {
             Backend::Unified(unified_adapter) => unified_adapter.write(self),
@@ -21,10 +21,13 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         }
     }
 
-    fn write_relations<RA: RelationAdapter>(&self, adapter: &RA) -> Result<(), crate::ToydbError>;
+    fn write_relations<PA: PartitionedAdapter>(
+        &self,
+        adapter: &PA,
+    ) -> Result<(), crate::ToydbError>;
 
-    fn load_with_backend<UA: UnifiedAdapter, RA: RelationAdapter>(
-        backend: &Backend<UA, RA>,
+    fn load_with_backend<UA: UnifiedAdapter, PA: PartitionedAdapter>(
+        backend: &Backend<UA, PA>,
     ) -> Result<Self, crate::ToydbError> {
         match backend {
             Backend::Unified(unified_adapter) => unified_adapter.read(),
@@ -33,9 +36,13 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
     }
 
     // TODO: Rename to `load_with_paritioned_adapter`
-    fn load_relations_with_adapter<RA: RelationAdapter>(adapter: &RA) -> Result<Self, ToydbError>;
+    fn load_relations_with_adapter<PA: PartitionedAdapter>(
+        adapter: &PA,
+    ) -> Result<Self, ToydbError>;
 
-    fn init_with_paritioned_adapter<PA: RelationAdapter>(adapter: &PA) -> Result<Self, ToydbError>;
+    fn init_with_paritioned_adapter<PA: PartitionedAdapter>(
+        adapter: &PA,
+    ) -> Result<Self, ToydbError>;
 }
 
 /// A utility trait that implemented by a state that can store a relation of a model.
@@ -80,7 +87,7 @@ macro_rules! define_state {
                 )*
             }
 
-            fn write_relations<RA: ::toydb::RelationAdapter>(&self, adapter: &RA) -> Result<(), ::toydb::ToydbError> {
+            fn write_relations<PA: ::toydb::PartitionedAdapter>(&self, adapter: &PA) -> Result<(), ::toydb::ToydbError> {
                 $(
                     {
                         let relation = &self.$model_type;
@@ -92,7 +99,7 @@ macro_rules! define_state {
                 Ok(())
             }
 
-            fn load_relations_with_adapter<RA: ::toydb::RelationAdapter>(adapter: &RA) -> Result<Self, ::toydb::ToydbError> {
+            fn load_relations_with_adapter<PA: ::toydb::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
                 let mut state = Self::default();
                 $(
                     state.$model_type = adapter.read::<$model_type>()?;
@@ -100,7 +107,7 @@ macro_rules! define_state {
                 Ok(state)
             }
 
-            fn init_with_paritioned_adapter<PA: ::toydb::RelationAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
+            fn init_with_paritioned_adapter<PA: ::toydb::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
                 let mut state = Self::default();
                 $(
                     state.$model_type = adapter.init_relation::<$model_type>()?;
