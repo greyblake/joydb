@@ -109,7 +109,7 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
             std::fs::create_dir_all(&self.dir_path)?;
         }
 
-        S::init_with_partitioned_adapter(self)
+        S::load_with_partitioned_adapter(self)
     }
 }
 

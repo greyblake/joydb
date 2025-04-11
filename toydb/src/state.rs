@@ -13,7 +13,7 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         adapter: &PA,
     ) -> Result<(), crate::ToydbError>;
 
-    fn init_with_partitioned_adapter<PA: PartitionedAdapter>(
+    fn load_with_partitioned_adapter<PA: PartitionedAdapter>(
         adapter: &PA,
     ) -> Result<Self, ToydbError>;
 }
@@ -24,9 +24,9 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
     note = "Make sure that model `{M}` is listed in the state definition."
 )]
 pub trait GetRelation<M: Model> {
-    fn get_rel_mut(&mut self) -> &mut Relation<M>;
+    fn get_relation_mut(&mut self) -> &mut Relation<M>;
 
-    fn get_rel(&self) -> &Relation<M>;
+    fn get_relation(&self) -> &Relation<M>;
 }
 
 #[macro_export]
@@ -38,7 +38,7 @@ macro_rules! define_state {
         ),*] $(,)?
     ) => {
         /// A struct that holds the data and can be (de)serialized to/from JSON.
-        #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+        #[derive(Debug, Default, ::serde::Serialize, ::serde::Deserialize)]
         #[serde(default)]
         #[allow(non_snake_case)]
         pub struct $state_type {
@@ -72,7 +72,7 @@ macro_rules! define_state {
                 Ok(())
             }
 
-            fn init_with_partitioned_adapter<PA: ::toydb::adapters::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
+            fn load_with_partitioned_adapter<PA: ::toydb::adapters::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
                 let mut state = Self::default();
                 $(
                     state.$model_type = adapter.load_relation::<$model_type>()?;
@@ -83,11 +83,11 @@ macro_rules! define_state {
 
         $(
             impl ::toydb::GetRelation<$model_type> for $state_type {
-                fn get_rel_mut(&mut self) -> &mut ::toydb::Relation<$model_type> {
+                fn get_relation_mut(&mut self) -> &mut ::toydb::Relation<$model_type> {
                     &mut self.$model_type
                 }
 
-                fn get_rel(&self) -> &::toydb::Relation<$model_type> {
+                fn get_relation(&self) -> &::toydb::Relation<$model_type> {
                     &self.$model_type
                 }
             }

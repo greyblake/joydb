@@ -36,7 +36,6 @@ impl<S: State, A: Adapter> Clone for Toydb<S, A> {
 }
 
 impl<S: State, A: Adapter> Toydb<S, A> {
-    // TODO: Rename to `open_with_adapter`
     pub fn open_with_adapter(adapter: A) -> Result<Self, ToydbError> {
         let inner: InnerToydb<S, A> = InnerToydb::open_with_adapter(adapter)?;
         Ok(Self {
@@ -163,7 +162,7 @@ impl<S: State, A: Adapter> InnerToydb<S, A> {
         S: GetRelation<M>,
     {
         let state = &mut self.state;
-        <S as GetRelation<M>>::get_rel_mut(state)
+        <S as GetRelation<M>>::get_relation_mut(state)
     }
 
     fn get_relation<M: Model>(&self) -> &Relation<M>
@@ -171,7 +170,7 @@ impl<S: State, A: Adapter> InnerToydb<S, A> {
         S: GetRelation<M>,
     {
         let state = &self.state;
-        <S as GetRelation<M>>::get_rel(state)
+        <S as GetRelation<M>>::get_relation(state)
     }
 
     fn insert<M: Model>(&mut self, model: &M) -> Result<(), ToydbError>
