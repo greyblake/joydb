@@ -6,12 +6,12 @@ use axum::{
 };
 use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
-use toydb::{Model, Toydb, adapters::UnifiedJsonAdapter, define_state};
+use toydb::{Model, Toydb, adapters::JsonAdapter, define_state};
 use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
-    let adapter = UnifiedJsonAdapter::new(DB_PATH);
+    let adapter = JsonAdapter::new(DB_PATH);
     let db = Db::open_with_backend(adapter).unwrap();
 
     // Create an Axum router with routes
@@ -58,7 +58,7 @@ define_state!(
     models: [Todo],
 );
 
-type Db = Toydb<DbState, UnifiedJsonAdapter>;
+type Db = Toydb<DbState, JsonAdapter>;
 
 // --- HANDLERS ---
 

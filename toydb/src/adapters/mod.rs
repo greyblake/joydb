@@ -3,7 +3,7 @@ mod json;
 
 use crate::{Model, Relation};
 use crate::{ToydbError, state::State};
-pub use json::{PartitionedJsonAdapter, UnifiedJsonAdapter};
+pub use json::{PartitionedJsonAdapter, JsonAdapter};
 use std::marker::PhantomData;
 
 // TODO:

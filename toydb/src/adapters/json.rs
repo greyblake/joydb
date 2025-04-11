@@ -5,17 +5,17 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 
 // TODO: add `pretty` boolean?
-pub struct UnifiedJsonAdapter {
+pub struct JsonAdapter {
     path: PathBuf,
 }
 
-impl UnifiedJsonAdapter {
+impl JsonAdapter {
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Self { path: path.into() }
     }
 }
 
-impl UnifiedAdapter for UnifiedJsonAdapter {
+impl UnifiedAdapter for JsonAdapter {
     fn read_state<S: State>(&self) -> Result<S, ToydbError> {
         let mut file = std::fs::File::open(&self.path)?;
         let mut contents = String::new();
@@ -48,7 +48,7 @@ impl UnifiedAdapter for UnifiedJsonAdapter {
     }
 }
 
-impl Adapter for UnifiedJsonAdapter {
+impl Adapter for JsonAdapter {
     type Target = Unified<Self>;
 }
 
