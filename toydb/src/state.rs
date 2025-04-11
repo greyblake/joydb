@@ -21,10 +21,6 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
         adapter: &PA,
     ) -> Result<(), crate::ToydbError>;
 
-    fn load_with_partitioned_adapter<PA: PartitionedAdapter>(
-        adapter: &PA,
-    ) -> Result<Self, ToydbError>;
-
     fn init_with_partitioned_adapter<PA: PartitionedAdapter>(
         adapter: &PA,
     ) -> Result<Self, ToydbError>;
@@ -82,14 +78,6 @@ macro_rules! define_state {
                     }
                 )*
                 Ok(())
-            }
-
-            fn load_with_partitioned_adapter<PA: ::toydb::adapters::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
-                let mut state = Self::default();
-                $(
-                    state.$model_type = adapter.read_relation::<$model_type>()?;
-                )*
-                Ok(state)
             }
 
             fn init_with_partitioned_adapter<PA: ::toydb::adapters::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {

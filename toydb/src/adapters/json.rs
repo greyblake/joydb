@@ -16,14 +16,6 @@ impl JsonAdapter {
 }
 
 impl UnifiedAdapter for JsonAdapter {
-    fn read_state<S: State>(&self) -> Result<S, ToydbError> {
-        let mut file = std::fs::File::open(&self.path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let state = serde_json::from_str(&contents)?;
-        Ok(state)
-    }
-
     fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError> {
         let json = serde_json::to_string_pretty(state)?;
         let mut file = std::fs::File::create(&self.path)?;
@@ -35,10 +27,15 @@ impl UnifiedAdapter for JsonAdapter {
         if self.path.exists() {
             if !self.path.is_file() {
                 // If the path exists but is not a file, then return an error
-                return Err(ToydbError::NotFile(self.path.clone()));
+                Err(ToydbError::NotFile(self.path.clone()))
+            } else {
+                // Otherwise read the state from the existing file
+                let mut file = std::fs::File::open(&self.path)?;
+                let mut contents = String::new();
+                file.read_to_string(&mut contents)?;
+                let state = serde_json::from_str(&contents)?;
+                Ok(state)
             }
-            // Otherwise read the state from the existing file
-            UnifiedAdapter::read_state(self)
         } else {
             // If the file does not exist, create a new file with empty state
             let empty_state = S::default();
@@ -71,15 +68,6 @@ impl PartitionedJsonAdapter {
 }
 
 impl PartitionedAdapter for PartitionedJsonAdapter {
-    fn read_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
-        let file_path = self.relation_file_path::<M>();
-        let mut file = std::fs::File::open(&file_path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let relation = serde_json::from_str(&contents)?;
-        Ok(relation)
-    }
-
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError> {
         let file_path = self.relation_file_path::<M>();
         let json = serde_json::to_string_pretty(relation)?;
@@ -93,10 +81,16 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
         if file_path.exists() {
             if !file_path.is_file() {
                 // If the path exists but is not a file, then return an error
-                return Err(ToydbError::NotFile(file_path));
+                Err(ToydbError::NotFile(file_path))
+            } else {
+                // Otherwise read the relation from the existing file
+                let file_path = self.relation_file_path::<M>();
+                let mut file = std::fs::File::open(&file_path)?;
+                let mut contents = String::new();
+                file.read_to_string(&mut contents)?;
+                let relation = serde_json::from_str(&contents)?;
+                Ok(relation)
             }
-            // Otherwise read the relation from the existing file
-            self.read_relation()
         } else {
             // If the file does not exist, create a new file with empty relation
             let empty_relation = Relation::<M>::default();

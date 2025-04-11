@@ -3,7 +3,7 @@ mod json;
 
 use crate::{Model, Relation};
 use crate::{ToydbError, state::State};
-pub use json::{PartitionedJsonAdapter, JsonAdapter};
+pub use json::{JsonAdapter, PartitionedJsonAdapter};
 use std::marker::PhantomData;
 
 // TODO:
@@ -18,10 +18,6 @@ use std::marker::PhantomData;
 pub trait Adapter {
     type Target: BlanketAdapter<Target = Self>;
 
-    fn read_state<S: State>(&self) -> Result<S, ToydbError> {
-        Self::Target::read_state(self)
-    }
-
     fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError> {
         Self::Target::write_state(self, state)
     }
@@ -33,7 +29,6 @@ pub trait Adapter {
 
 pub trait BlanketAdapter {
     type Target;
-    fn read_state<S: State>(target: &Self::Target) -> Result<S, ToydbError>;
     fn write_state<S: State>(target: &Self::Target, state: &S) -> Result<(), ToydbError>;
     fn init_state<S: State>(target: &Self::Target) -> Result<S, ToydbError>;
 }
@@ -43,10 +38,6 @@ pub struct Unified<UA: UnifiedAdapter>(PhantomData<UA>);
 
 impl<UA: UnifiedAdapter> BlanketAdapter for Unified<UA> {
     type Target = UA;
-
-    fn read_state<S: State>(target: &UA) -> Result<S, ToydbError> {
-        target.read_state()
-    }
 
     fn write_state<S: State>(target: &UA, state: &S) -> Result<(), ToydbError> {
         target.write_state(state)
@@ -63,10 +54,6 @@ pub struct Partitioned<PA: PartitionedAdapter>(PhantomData<PA>);
 impl<PA: PartitionedAdapter> BlanketAdapter for Partitioned<PA> {
     type Target = PA;
 
-    fn read_state<S: State>(target: &PA) -> Result<S, ToydbError> {
-        S::load_with_partitioned_adapter(target)
-    }
-
     fn write_state<S: State>(target: &PA, state: &S) -> Result<(), ToydbError> {
         S::write_with_partitioned_adapter(state, target)
     }
@@ -77,7 +64,7 @@ impl<PA: PartitionedAdapter> BlanketAdapter for Partitioned<PA> {
 }
 
 pub trait UnifiedAdapter {
-    fn read_state<S: State>(&self) -> Result<S, ToydbError>;
+    // fn read_state<S: State>(&self) -> Result<S, ToydbError>;
     fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError>;
 
     /// Is called only once when the database is opened or created.
@@ -92,8 +79,6 @@ pub trait UnifiedAdapter {
 ///
 /// But at the moment it's postponed.
 pub trait PartitionedAdapter {
-    fn read_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
-
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError>;
 
     fn init_state<S: State>(&self) -> Result<S, ToydbError>;
