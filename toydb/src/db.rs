@@ -151,7 +151,7 @@ impl<S: State, A: Adapter> InnerToydb<S, A> {
     }
 
     fn save(&mut self) -> Result<(), ToydbError> {
-        self.state.write_with_adapter(&self.adapter)
+        self.adapter.write_state(&self.state)
     }
 
     fn is_dirty(&self) -> bool {

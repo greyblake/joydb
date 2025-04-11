@@ -1,20 +1,12 @@
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 
-use crate::{
-    Model, Relation, ToydbError,
-    adapters::{Adapter, PartitionedAdapter},
-};
+use crate::{Model, Relation, ToydbError, adapters::PartitionedAdapter};
 
 pub trait State: Default + Debug + Serialize + DeserializeOwned {
     fn is_dirty(&self) -> bool;
 
     fn reset_dirty(&mut self);
-
-    // TODO: Remove this method and inline it in db.rs
-    fn write_with_adapter<A: Adapter>(&self, adapter: &A) -> Result<(), crate::ToydbError> {
-        adapter.write_state(self)
-    }
 
     fn write_with_partitioned_adapter<PA: PartitionedAdapter>(
         &self,
