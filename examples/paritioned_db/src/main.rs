@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{Backend, Model, PartitionedDb, PartitionedJsonAdapter};
+use toydb::{Model, PartitionedJsonAdapter, Toydb};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {
@@ -18,13 +18,13 @@ toydb::define_state! {
     models: [User, Post],
 }
 
-type Db = PartitionedDb<AppState, PartitionedJsonAdapter>;
+type Db = Toydb<AppState, PartitionedJsonAdapter>;
 
 const DB_DIR: &str = "db_data";
 
 fn main() {
-    let backend = Backend::Partitioned(PartitionedJsonAdapter::new(DB_DIR));
-    let db = Db::open_with_backend(backend).unwrap();
+    let adapter = PartitionedJsonAdapter::new(DB_DIR);
+    let db = Db::open_with_backend(adapter).unwrap();
 
     db.insert(&User {
         id: 1,

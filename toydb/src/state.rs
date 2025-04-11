@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use crate::{
     Model, Relation, ToydbError,
-    adapters::{Backend, PartitionedAdapter, UnifiedAdapter},
+    adapters::{Adapter, PartitionedAdapter},
 };
 
 pub trait State: Default + Debug + Serialize + DeserializeOwned {
@@ -11,31 +11,15 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
 
     fn reset_dirty(&mut self);
 
-    fn write_with_backend<UA: UnifiedAdapter, PA: PartitionedAdapter>(
-        &self,
-        backend: &Backend<UA, PA>,
-    ) -> Result<(), crate::ToydbError> {
-        match backend {
-            Backend::Unified(unified_adapter) => unified_adapter.write_state(self),
-            Backend::Partitioned(parititoned_adapter) => {
-                self.write_with_partitioned_adapter(parititoned_adapter)
-            }
-        }
+    // TODO: Remove this method and inline it in db.rs
+    fn write_with_adapter<A: Adapter>(&self, adapter: &A) -> Result<(), crate::ToydbError> {
+        adapter.write_state(self)
     }
 
     fn write_with_partitioned_adapter<PA: PartitionedAdapter>(
         &self,
         adapter: &PA,
     ) -> Result<(), crate::ToydbError>;
-
-    fn load_with_backend<UA: UnifiedAdapter, PA: PartitionedAdapter>(
-        backend: &Backend<UA, PA>,
-    ) -> Result<Self, crate::ToydbError> {
-        match backend {
-            Backend::Unified(unified_adapter) => unified_adapter.read_state(),
-            Backend::Partitioned(adapter) => Self::load_with_partitioned_adapter(adapter),
-        }
-    }
 
     fn load_with_partitioned_adapter<PA: PartitionedAdapter>(
         adapter: &PA,

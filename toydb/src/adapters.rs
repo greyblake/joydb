@@ -1,7 +1,78 @@
 use crate::{Model, Relation};
 use crate::{ToydbError, state::State};
 use std::io::{Read, Write};
+use std::marker::PhantomData;
 use std::path::PathBuf;
+
+// TODO:
+// See: https://users.rust-lang.org/t/two-blanket-implementations-for-different-classes-of-objects/100173
+// See example: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=db5ee78e4307b2ae4c1d113d0e39a6f2
+//
+// Introduce a main Adapter trait that can be implemented either through UnifiedAdapter or PartitionedAdapter.
+
+// ------- ABSTRACTIONS --------- //
+
+// TODO: Write a blog article about this workaround.
+pub trait Adapter {
+    type Target: BlanketAdapter<Target = Self>;
+
+    fn read_state<S: State>(&self) -> Result<S, ToydbError> {
+        Self::Target::read_state(self)
+    }
+
+    fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError> {
+        Self::Target::write_state(self, state)
+    }
+
+    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+        Self::Target::init_state(self)
+    }
+}
+
+pub trait BlanketAdapter {
+    type Target;
+    fn read_state<S: State>(target: &Self::Target) -> Result<S, ToydbError>;
+    fn write_state<S: State>(target: &Self::Target, state: &S) -> Result<(), ToydbError>;
+    fn init_state<S: State>(target: &Self::Target) -> Result<S, ToydbError>;
+}
+
+// Imlpement Adapter though UnifiedAdapter
+pub struct Unified<UA: UnifiedAdapter>(PhantomData<UA>);
+
+impl<UA: UnifiedAdapter> BlanketAdapter for Unified<UA> {
+    type Target = UA;
+
+    fn read_state<S: State>(target: &UA) -> Result<S, ToydbError> {
+        target.read_state()
+    }
+
+    fn write_state<S: State>(target: &UA, state: &S) -> Result<(), ToydbError> {
+        target.write_state(state)
+    }
+
+    fn init_state<S: State>(target: &UA) -> Result<S, ToydbError> {
+        target.init_state()
+    }
+}
+
+// Implement Adapter though PartitionedAdapter
+pub struct Partitioned<PA: PartitionedAdapter>(PhantomData<PA>);
+
+impl<PA: PartitionedAdapter> BlanketAdapter for Partitioned<PA> {
+    type Target = PA;
+
+    fn read_state<S: State>(target: &PA) -> Result<S, ToydbError> {
+        S::load_with_partitioned_adapter(target)
+    }
+
+    fn write_state<S: State>(target: &PA, state: &S) -> Result<(), ToydbError> {
+        S::write_with_partitioned_adapter(state, target)
+    }
+
+    fn init_state<S: State>(target: &PA) -> Result<S, ToydbError> {
+        target.init_state()
+    }
+}
 
 pub trait UnifiedAdapter {
     fn read_state<S: State>(&self) -> Result<S, ToydbError>;
@@ -28,7 +99,6 @@ pub trait PartitionedAdapter {
     // Is meant to be called by State, because State knows concrete type of M.
     fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
 }
-
 
 // TODO: add `pretty` boolean?
 pub struct UnifiedJsonAdapter {
@@ -64,15 +134,21 @@ impl UnifiedAdapter for UnifiedJsonAdapter {
                 return Err(ToydbError::NotFile(self.path.clone()));
             }
             // Otherwise read the state from the existing file
-            self.read_state()
+            UnifiedAdapter::read_state(self)
         } else {
             // If the file does not exist, create a new file with empty state
             let empty_state = S::default();
-            self.write_state(&empty_state)?;
+            UnifiedAdapter::write_state(self, &empty_state)?;
             Ok(empty_state)
         }
     }
 }
+
+impl Adapter for UnifiedJsonAdapter {
+    type Target = Unified<Self>;
+}
+
+// --------------------------- //
 
 pub struct PartitionedJsonAdapter {
     dir_path: PathBuf,
@@ -139,52 +215,6 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
     }
 }
 
-#[derive(Debug)]
-pub struct NeverAdapter;
-
-impl UnifiedAdapter for NeverAdapter {
-    fn read_state<S: State>(&self) -> Result<S, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as UnifiedAdapter to read.");
-    }
-
-    fn write_state<S: State>(&self, _state: &S) -> Result<(), ToydbError> {
-        panic!("NeverAdapter is not meant to be used as UnifiedAdapter to write.");
-    }
-
-    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as UnifiedAdapter to init.");
-    }
-}
-
-impl PartitionedAdapter for NeverAdapter {
-    fn read_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to read.");
-    }
-
-    fn write_relation<M: Model>(&self, _relation: &Relation<M>) -> Result<(), ToydbError> {
-        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to write.");
-    }
-
-    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to init_state.");
-    }
-
-    fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
-        panic!("NeverAdapter is not meant to be used as PartitionedAdapter to init relation.");
-    }
-}
-
-#[derive(Debug)]
-pub enum Backend<UA: UnifiedAdapter, PA: PartitionedAdapter> {
-    Unified(UA),
-    Partitioned(PA),
-}
-
-impl<UA: UnifiedAdapter, PA: PartitionedAdapter> Backend<UA, PA> {
-    pub(crate) fn init_state<S: State>(&self) -> Result<S, ToydbError> {
-        match self {
-            Backend::Unified(unified_adapter) => unified_adapter.init_state::<S>(),
-            Backend::Partitioned(partitioned_adapter) => partitioned_adapter.init_state::<S>(),
-        }
-    }
+impl Adapter for PartitionedJsonAdapter {
+    type Target = Partitioned<Self>;
 }

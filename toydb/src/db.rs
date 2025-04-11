@@ -1,5 +1,5 @@
-use crate::adapters::{Backend, UnifiedAdapter};
-use crate::{Model, NeverAdapter, PartitionedAdapter};
+use crate::Model;
+use crate::adapters::Adapter;
 use crate::{
     Relation, ToydbError,
     state::{GetRelation, State},
@@ -7,9 +7,6 @@ use crate::{
 use std::fmt::Debug;
 use std::ops::Drop;
 use std::sync::{Arc, Mutex};
-
-pub type UnifiedDb<S, UA> = Toydb<S, UA, NeverAdapter>;
-pub type PartitionedDb<S, PA> = Toydb<S, NeverAdapter, PA>;
 
 /// A struct that represents a database.
 /// It's thread-safe and can be shared between multiple threads.
@@ -24,13 +21,13 @@ pub type PartitionedDb<S, PA> = Toydb<S, NeverAdapter, PA>;
 /// | Delete    | [`delete`](Self::delete)                                         |
 ///
 #[derive(Debug)]
-pub struct Toydb<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> {
-    inner: Arc<Mutex<InnerToydb<S, UA, PA>>>,
+pub struct Toydb<S: State, A: Adapter> {
+    inner: Arc<Mutex<InnerToydb<S, A>>>,
 }
 
 // Implement `Clone` manually, otherwise the compile requires a `State: Clone` bound.
 // But we deliberately don't want to be the inner state to implement `Clone`.
-impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> Clone for Toydb<S, UA, PA> {
+impl<S: State, A: Adapter> Clone for Toydb<S, A> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -38,9 +35,10 @@ impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> Clone for Toydb<S, UA
     }
 }
 
-impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> Toydb<S, UA, PA> {
-    pub fn open_with_backend(backend: Backend<UA, PA>) -> Result<Self, ToydbError> {
-        let inner: InnerToydb<S, UA, PA> = InnerToydb::open_with_backend(backend)?;
+impl<S: State, A: Adapter> Toydb<S, A> {
+    // TODO: Rename to `open_with_adapter`
+    pub fn open_with_backend(adapter: A) -> Result<Self, ToydbError> {
+        let inner: InnerToydb<S, A> = InnerToydb::open_with_backend(adapter)?;
         Ok(Self {
             inner: Arc::new(Mutex::new(inner)),
         })
@@ -132,15 +130,15 @@ impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> Toydb<S, UA, PA> {
 }
 
 #[derive(Debug)]
-struct InnerToydb<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> {
+struct InnerToydb<S: State, A: Adapter> {
     state: S,
-    backend: Backend<UA, PA>,
+    adapter: A,
 }
 
-impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> InnerToydb<S, UA, PA> {
-    fn open_with_backend(backend: Backend<UA, PA>) -> Result<Self, ToydbError> {
-        let state = backend.init_state::<S>()?;
-        Ok(Self { state, backend })
+impl<S: State, A: Adapter> InnerToydb<S, A> {
+    fn open_with_backend(adapter: A) -> Result<Self, ToydbError> {
+        let state = adapter.init_state::<S>()?;
+        Ok(Self { state, adapter })
     }
 
     /// Write data to the file system if there are unsaved changes.
@@ -153,7 +151,7 @@ impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> InnerToydb<S, UA, PA>
     }
 
     fn save(&mut self) -> Result<(), ToydbError> {
-        self.state.write_with_backend(&self.backend)
+        self.state.write_with_adapter(&self.adapter)
     }
 
     fn is_dirty(&self) -> bool {
@@ -225,7 +223,7 @@ impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> InnerToydb<S, UA, PA>
     }
 }
 
-impl<S: State, UA: UnifiedAdapter, PA: PartitionedAdapter> Drop for InnerToydb<S, UA, PA> {
+impl<S: State, A: Adapter> Drop for InnerToydb<S, A> {
     fn drop(&mut self) {
         if let Err(err) = self.flush() {
             eprintln!("Failed to flush the database: {}", err);

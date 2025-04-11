@@ -14,8 +14,8 @@ where
     F: FnOnce(Database),
 {
     let file_path = gen_db_file_path();
-    let backend = toydb::Backend::Unified(toydb::UnifiedJsonAdapter::new(&file_path));
-    let db = Database::open_with_backend(backend).unwrap();
+    let adapter = toydb::UnifiedJsonAdapter::new(&file_path);
+    let db = Database::open_with_backend(adapter).unwrap();
     f(db);
     std::fs::remove_file(file_path).unwrap();
 }
