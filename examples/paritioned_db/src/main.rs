@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{Model, PartitionedJsonAdapter, Toydb};
+use toydb::{Model, Toydb, adapters::PartitionedJsonAdapter};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {

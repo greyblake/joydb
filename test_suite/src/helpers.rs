@@ -1,4 +1,5 @@
 use crate::database::Database;
+use toydb::adapters::UnifiedJsonAdapter;
 use uuid::Uuid;
 
 /// Generate a unique file path for the database file.
@@ -14,7 +15,7 @@ where
     F: FnOnce(Database),
 {
     let file_path = gen_db_file_path();
-    let adapter = toydb::UnifiedJsonAdapter::new(&file_path);
+    let adapter = UnifiedJsonAdapter::new(&file_path);
     let db = Database::open_with_backend(adapter).unwrap();
     f(db);
     std::fs::remove_file(file_path).unwrap();

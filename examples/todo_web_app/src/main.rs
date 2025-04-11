@@ -6,7 +6,7 @@ use axum::{
 };
 use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
-use toydb::{Model, Toydb, UnifiedJsonAdapter, define_state};
+use toydb::{Model, Toydb, adapters::UnifiedJsonAdapter, define_state};
 use uuid::Uuid;
 
 #[tokio::main]
