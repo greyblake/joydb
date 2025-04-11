@@ -1,4 +1,3 @@
 /target
 /Cargo.lock
 /test_suite/db
-/dummy/dummy.json
