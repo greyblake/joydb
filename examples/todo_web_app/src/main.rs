@@ -12,7 +12,7 @@ use uuid::Uuid;
 #[tokio::main]
 async fn main() {
     let adapter = JsonAdapter::new(DB_PATH);
-    let db = Db::open_with_backend(adapter).unwrap();
+    let db = Db::open_with_adapter(adapter).unwrap();
 
     // Create an Axum router with routes
     let app = Router::new()

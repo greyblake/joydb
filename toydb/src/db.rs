@@ -37,8 +37,8 @@ impl<S: State, A: Adapter> Clone for Toydb<S, A> {
 
 impl<S: State, A: Adapter> Toydb<S, A> {
     // TODO: Rename to `open_with_adapter`
-    pub fn open_with_backend(adapter: A) -> Result<Self, ToydbError> {
-        let inner: InnerToydb<S, A> = InnerToydb::open_with_backend(adapter)?;
+    pub fn open_with_adapter(adapter: A) -> Result<Self, ToydbError> {
+        let inner: InnerToydb<S, A> = InnerToydb::open_with_adapter(adapter)?;
         Ok(Self {
             inner: Arc::new(Mutex::new(inner)),
         })
@@ -136,7 +136,7 @@ struct InnerToydb<S: State, A: Adapter> {
 }
 
 impl<S: State, A: Adapter> InnerToydb<S, A> {
-    fn open_with_backend(adapter: A) -> Result<Self, ToydbError> {
+    fn open_with_adapter(adapter: A) -> Result<Self, ToydbError> {
         let state = adapter.load_state::<S>()?;
         Ok(Self { state, adapter })
     }

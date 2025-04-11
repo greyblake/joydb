@@ -29,7 +29,7 @@ fn main() {
     // Insert some data
     {
         let adapter = JsonAdapter::new(DB_FILE);
-        let db = Db::open_with_backend(adapter).unwrap();
+        let db = Db::open_with_adapter(adapter).unwrap();
 
         db.insert(&User {
             id: 1,
@@ -53,7 +53,7 @@ fn main() {
     // Load the data back
     {
         let adapter = JsonAdapter::new(DB_FILE);
-        let db = Db::open_with_backend(adapter).unwrap();
+        let db = Db::open_with_adapter(adapter).unwrap();
         let alice: User = db.find(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 

@@ -16,7 +16,7 @@ where
 {
     let file_path = gen_db_file_path();
     let adapter = JsonAdapter::new(&file_path);
-    let db = Database::open_with_backend(adapter).unwrap();
+    let db = Database::open_with_adapter(adapter).unwrap();
     f(db);
     std::fs::remove_file(file_path).unwrap();
 }
