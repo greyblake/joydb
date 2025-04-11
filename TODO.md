@@ -57,3 +57,4 @@
     - `nulldb`
     - `zerodb`
     - `filedb`
+    - `sundb`

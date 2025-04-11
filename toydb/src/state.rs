@@ -83,7 +83,7 @@ macro_rules! define_state {
             fn init_with_partitioned_adapter<PA: ::toydb::adapters::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
                 let mut state = Self::default();
                 $(
-                    state.$model_type = adapter.init_relation::<$model_type>()?;
+                    state.$model_type = adapter.load_relation::<$model_type>()?;
                 )*
                 Ok(state)
             }

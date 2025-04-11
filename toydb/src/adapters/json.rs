@@ -23,7 +23,7 @@ impl UnifiedAdapter for JsonAdapter {
         Ok(())
     }
 
-    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+    fn load_state<S: State>(&self) -> Result<S, ToydbError> {
         if self.path.exists() {
             if !self.path.is_file() {
                 // If the path exists but is not a file, then return an error
@@ -76,7 +76,7 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
         Ok(())
     }
 
-    fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
+    fn load_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
         let file_path = self.relation_file_path::<M>();
         if file_path.exists() {
             if !file_path.is_file() {
@@ -99,7 +99,7 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
         }
     }
 
-    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
+    fn load_state<S: State>(&self) -> Result<S, ToydbError> {
         if self.dir_path.exists() {
             if !self.dir_path.is_dir() {
                 return Err(ToydbError::NotDirectory(self.dir_path.clone()));

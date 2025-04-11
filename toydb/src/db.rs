@@ -137,7 +137,7 @@ struct InnerToydb<S: State, A: Adapter> {
 
 impl<S: State, A: Adapter> InnerToydb<S, A> {
     fn open_with_backend(adapter: A) -> Result<Self, ToydbError> {
-        let state = adapter.init_state::<S>()?;
+        let state = adapter.load_state::<S>()?;
         Ok(Self { state, adapter })
     }
 

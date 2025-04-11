@@ -22,15 +22,15 @@ pub trait Adapter {
         Self::Target::write_state(self, state)
     }
 
-    fn init_state<S: State>(&self) -> Result<S, ToydbError> {
-        Self::Target::init_state(self)
+    fn load_state<S: State>(&self) -> Result<S, ToydbError> {
+        Self::Target::load_state(self)
     }
 }
 
 pub trait BlanketAdapter {
     type Target;
     fn write_state<S: State>(target: &Self::Target, state: &S) -> Result<(), ToydbError>;
-    fn init_state<S: State>(target: &Self::Target) -> Result<S, ToydbError>;
+    fn load_state<S: State>(target: &Self::Target) -> Result<S, ToydbError>;
 }
 
 // Imlpement Adapter though UnifiedAdapter
@@ -43,8 +43,8 @@ impl<UA: UnifiedAdapter> BlanketAdapter for Unified<UA> {
         target.write_state(state)
     }
 
-    fn init_state<S: State>(target: &UA) -> Result<S, ToydbError> {
-        target.init_state()
+    fn load_state<S: State>(target: &UA) -> Result<S, ToydbError> {
+        target.load_state()
     }
 }
 
@@ -58,8 +58,8 @@ impl<PA: PartitionedAdapter> BlanketAdapter for Partitioned<PA> {
         S::write_with_partitioned_adapter(state, target)
     }
 
-    fn init_state<S: State>(target: &PA) -> Result<S, ToydbError> {
-        target.init_state()
+    fn load_state<S: State>(target: &PA) -> Result<S, ToydbError> {
+        target.load_state()
     }
 }
 
@@ -69,7 +69,7 @@ pub trait UnifiedAdapter {
 
     /// Is called only once when the database is opened or created.
     /// Usually the adapter should check if the files exist and if not, create them.
-    fn init_state<S: State>(&self) -> Result<S, ToydbError>;
+    fn load_state<S: State>(&self) -> Result<S, ToydbError>;
 }
 
 /// The idea behind this trait is to allow storing relations in separate files.
@@ -81,8 +81,8 @@ pub trait UnifiedAdapter {
 pub trait PartitionedAdapter {
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError>;
 
-    fn init_state<S: State>(&self) -> Result<S, ToydbError>;
+    fn load_state<S: State>(&self) -> Result<S, ToydbError>;
 
     // Is meant to be called by State, because State knows concrete type of M.
-    fn init_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
+    fn load_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
 }
