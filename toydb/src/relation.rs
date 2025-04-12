@@ -7,8 +7,8 @@ pub struct Relation<M: Model> {
     // We ignore meta while serializing and deserializing.
     pub(crate) meta: RelationMeta,
 
-    // The actual models in the relation.
-    pub(crate) models: Vec<M>,
+    // The actual records in the relation.
+    pub(crate) records: Vec<M>,
 }
 
 impl<M> Default for Relation<M>
@@ -25,15 +25,14 @@ impl<M: Model> Relation<M> {
         Relation {
             meta: RelationMeta::default(),
             // TODO: Rename to records
-            models: Vec::new(),
+            records: Vec::new(),
         }
     }
 
-    // TODO: rename to new_with_records
-    pub(crate) fn new_with_models(models: Vec<M>) -> Self {
+    pub(crate) fn new_with_records(records: Vec<M>) -> Self {
         Relation {
             meta: RelationMeta::default(),
-            models,
+            records,
         }
     }
 
@@ -45,43 +44,43 @@ impl<M: Model> Relation<M> {
         self.meta.is_dirty = false;
     }
 
-    // TODO: Rename to records
-    pub fn models(&self) -> &[M] {
-        &self.models
+    pub fn records(&self) -> &[M] {
+        &self.records
     }
 
-    pub(crate) fn insert(&mut self, model: &M) -> Result<(), ToydbError> {
-        let id = model.id();
-        let is_duplicated = self.models.iter().find(|m| m.id() == id).is_some();
+    pub(crate) fn insert(&mut self, record: &M) -> Result<(), ToydbError> {
+        let id = record.id();
+        let is_duplicated = self.records.iter().find(|m| m.id() == id).is_some();
         if is_duplicated {
             return Err(ToydbError::DuplicatedId {
                 id: format!("{:?}", id),
                 model_name: M::relation_name().to_owned(),
             });
         } else {
-            self.models.push(model.clone());
+            self.records.push(record.clone());
             self.meta.is_dirty = true;
             Ok(())
         }
     }
 
+    // TODO: Shell it be renamed to `get()` ?
     pub(crate) fn find(&self, id: &M::Id) -> Result<Option<M>, ToydbError> {
-        let maybe_record = self.models.iter().find(|m| m.id() == id).cloned();
+        let maybe_record = self.records.iter().find(|m| m.id() == id).cloned();
         Ok(maybe_record)
     }
 
     pub(crate) fn all(&self) -> Result<Vec<M>, ToydbError> {
-        Ok(self.models.to_vec())
+        Ok(self.records.to_vec())
     }
 
     pub(crate) fn count(&self) -> Result<usize, ToydbError> {
-        Ok(self.models.len())
+        Ok(self.records.len())
     }
 
     pub(crate) fn update(&mut self, new_model: M) -> Result<(), ToydbError> {
         let id = new_model.id();
 
-        if let Some(m) = self.models.iter_mut().find(|m| m.id() == id) {
+        if let Some(m) = self.records.iter_mut().find(|m| m.id() == id) {
             *m = new_model;
             self.meta.is_dirty = true;
             Ok(())
@@ -94,9 +93,9 @@ impl<M: Model> Relation<M> {
     }
 
     pub(crate) fn delete(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError> {
-        let index = self.models.iter().position(|m| m.id() == id);
+        let index = self.records.iter().position(|m| m.id() == id);
         if let Some(index) = index {
-            let record = self.models.remove(index);
+            let record = self.records.remove(index);
             self.meta.is_dirty = true;
             Ok(Some(record))
         } else {
@@ -118,7 +117,7 @@ impl<M: Model> Serialize for Relation<M> {
     where
         S: Serializer,
     {
-        self.models.serialize(serializer)
+        self.records.serialize(serializer)
     }
 }
 
@@ -131,7 +130,7 @@ impl<'de, M: Model> Deserialize<'de> for Relation<M> {
         let models = Vec::<M>::deserialize(deserializer)?;
         Ok(Relation {
             meta: RelationMeta::default(),
-            models,
+            records: models,
         })
     }
 }
@@ -180,7 +179,7 @@ mod tests {
     fn sample_relation() -> Relation<Post> {
         Relation {
             meta: RelationMeta { is_dirty: false },
-            models: sample_posts(),
+            records: sample_posts(),
         }
     }
 
@@ -191,7 +190,7 @@ mod tests {
         fn test_serialize_relation() {
             let relation = Relation {
                 meta: RelationMeta { is_dirty: false },
-                models: sample_posts(),
+                records: sample_posts(),
             };
 
             let json = serde_json::to_string(&relation).unwrap();
@@ -207,11 +206,11 @@ mod tests {
 
             let relation: Relation<Post> = serde_json::from_str(json).unwrap();
 
-            assert_eq!(relation.models.len(), 2);
-            assert_eq!(relation.models[0].id, 10);
-            assert_eq!(relation.models[0].title, "One");
-            assert_eq!(relation.models[1].id, 20);
-            assert_eq!(relation.models[1].title, "Two");
+            assert_eq!(relation.records.len(), 2);
+            assert_eq!(relation.records[0].id, 10);
+            assert_eq!(relation.records[0].title, "One");
+            assert_eq!(relation.records[1].id, 20);
+            assert_eq!(relation.records[1].title, "Two");
 
             // The meta field should be default-initialized
             assert_eq!(relation.meta.is_dirty, false);
@@ -221,13 +220,13 @@ mod tests {
         fn test_serialize_deserialize_roundtrip() {
             let original = Relation {
                 meta: RelationMeta { is_dirty: true },
-                models: sample_posts(),
+                records: sample_posts(),
             };
 
             let json = serde_json::to_string(&original).unwrap();
             let deserialized: Relation<Post> = serde_json::from_str(&json).unwrap();
 
-            assert_eq!(original.models, deserialized.models);
+            assert_eq!(original.records, deserialized.records);
             assert_eq!(deserialized.meta.is_dirty, false); // Meta is not serialized
         }
     }
@@ -238,7 +237,7 @@ mod tests {
         #[test]
         fn should_insert_new_record_and_mark_dirty() {
             let mut relation = sample_relation();
-            assert_eq!(relation.models.len(), 2);
+            assert_eq!(relation.records.len(), 2);
             assert_eq!(relation.meta.is_dirty, false);
 
             let post = Post {
@@ -247,8 +246,8 @@ mod tests {
             };
             relation.insert(&post).unwrap();
 
-            assert_eq!(relation.models.len(), 3);
-            assert_eq!(relation.models[2], post);
+            assert_eq!(relation.records.len(), 3);
+            assert_eq!(relation.records[2], post);
             assert_eq!(relation.meta.is_dirty, true);
         }
 
@@ -358,8 +357,8 @@ mod tests {
             let id = 1;
             let deleted_post = relation.delete(&id).unwrap().unwrap();
 
-            assert_eq!(relation.models.len(), 1);
-            assert_eq!(relation.models[0], second_post());
+            assert_eq!(relation.records.len(), 1);
+            assert_eq!(relation.records[0], second_post());
             assert_eq!(relation.meta.is_dirty, true);
             assert_eq!(deleted_post, first_post());
         }
@@ -370,7 +369,7 @@ mod tests {
             let id = 555;
             let maybe_post = relation.delete(&id).unwrap();
             assert!(maybe_post.is_none());
-            assert_eq!(relation.models.len(), 2);
+            assert_eq!(relation.records.len(), 2);
             assert_eq!(relation.meta.is_dirty, false);
         }
     }

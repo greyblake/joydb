@@ -66,13 +66,13 @@ fn load_relation_from_csv_file<M: Model>(file_path: &PathBuf) -> Result<Relation
     let mut reader =
         csv::Reader::from_path(file_path).map_err(|e| ToydbError::Deserialize(Box::new(e)))?;
 
-    let mut models = Vec::new();
+    let mut records = Vec::new();
     for result in reader.deserialize() {
         let record: M = result.map_err(|e| ToydbError::Deserialize(Box::new(e)))?;
-        models.push(record);
+        records.push(record);
     }
 
-    Ok(Relation::new_with_models(models))
+    Ok(Relation::new_with_records(records))
 }
 
 fn write_relation_to_csv_file<M: Model>(
@@ -82,7 +82,7 @@ fn write_relation_to_csv_file<M: Model>(
     let mut writer =
         csv::Writer::from_path(file_path).map_err(|e| ToydbError::Serialize(Box::new(e)))?;
 
-    for model in relation.models() {
+    for model in relation.records() {
         writer
             .serialize(model)
             .map_err(|e| ToydbError::Serialize(Box::new(e)))?;

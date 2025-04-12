@@ -1,6 +1,10 @@
+- [ ] Rename to `joydb`
+
 ### Adapters
 
-- [ ] CSV adapter
+- [x] CSV adapter
+- [ ] RON adapters
+- [ ] YAML adapters
 
 ### Flushing
 - [ ] Spawn a separate thread on `open` to flush database with some interval

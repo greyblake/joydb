@@ -9,7 +9,6 @@ struct User {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct Post {
-    id: u32,
     title: String,
 }
 
