@@ -21,6 +21,22 @@ where
 }
 
 impl<M: Model> Relation<M> {
+    pub(crate) fn new() -> Self {
+        Relation {
+            meta: RelationMeta::default(),
+            // TODO: Rename to records
+            models: Vec::new(),
+        }
+    }
+
+    // TODO: rename to new_with_records
+    pub(crate) fn new_with_models(models: Vec<M>) -> Self {
+        Relation {
+            meta: RelationMeta::default(),
+            models,
+        }
+    }
+
     pub fn is_dirty(&self) -> bool {
         self.meta.is_dirty
     }
@@ -29,11 +45,9 @@ impl<M: Model> Relation<M> {
         self.meta.is_dirty = false;
     }
 
-    pub(crate) fn new() -> Self {
-        Relation {
-            meta: RelationMeta::default(),
-            models: Vec::new(),
-        }
+    // TODO: Rename to records
+    pub fn models(&self) -> &[M] {
+        &self.models
     }
 
     pub(crate) fn insert(&mut self, model: &M) -> Result<(), ToydbError> {

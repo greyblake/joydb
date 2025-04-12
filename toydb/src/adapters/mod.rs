@@ -1,8 +1,10 @@
 // TODO: Put behind feature flag
+mod csv;
 mod json;
 
 use crate::{Model, Relation};
 use crate::{ToydbError, state::State};
+pub use csv::CsvAdapter;
 pub use json::{JsonAdapter, PartitionedJsonAdapter};
 use std::marker::PhantomData;
 
