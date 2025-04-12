@@ -65,7 +65,7 @@ fn gen_derive_model(model: &Model) -> TokenStream {
     let type_name_str: String = type_name.to_string();
 
     quote! {
-        impl ::toydb::Model for #type_name {        // impl ::toydb::Model for User {
+        impl ::joydb::Model for #type_name {        // impl ::joydb::Model for User {
             type Id = #id_field_type;               //     type Id = i32
                                                     //
             fn id(&self) -> &Self::Id {             //     fn id(&self) -> Self::Id {

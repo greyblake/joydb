@@ -1,6 +1,6 @@
 use crate::adapters::{Adapter, Partitioned, PartitionedAdapter};
 use crate::{Model, Relation};
-use crate::{ToydbError, state::State};
+use crate::{JoydbError, state::State};
 use std::path::PathBuf;
 
 pub struct CsvAdapter {
@@ -20,17 +20,17 @@ impl CsvAdapter {
 }
 
 impl PartitionedAdapter for CsvAdapter {
-    fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError> {
+    fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), JoydbError> {
         let file_path = self.relation_file_path::<M>();
         write_relation_to_csv_file(relation, &file_path)
     }
 
-    fn load_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError> {
+    fn load_relation<M: Model>(&self) -> Result<Relation<M>, JoydbError> {
         let file_path = self.relation_file_path::<M>();
         if file_path.exists() {
             if !file_path.is_file() {
                 // If the path exists but is not a file, then return an error
-                Err(ToydbError::NotFile(file_path))
+                Err(JoydbError::NotFile(file_path))
             } else {
                 // Otherwise read the relation from the existing file
                 let file_path = self.relation_file_path::<M>();
@@ -44,10 +44,10 @@ impl PartitionedAdapter for CsvAdapter {
         }
     }
 
-    fn load_state<S: State>(&self) -> Result<S, ToydbError> {
+    fn load_state<S: State>(&self) -> Result<S, JoydbError> {
         if self.dir_path.exists() {
             if !self.dir_path.is_dir() {
-                return Err(ToydbError::NotDirectory(self.dir_path.clone()));
+                return Err(JoydbError::NotDirectory(self.dir_path.clone()));
             }
         } else {
             // Create a directory if it does not exist
@@ -62,13 +62,13 @@ impl Adapter for CsvAdapter {
     type Target = Partitioned<Self>;
 }
 
-fn load_relation_from_csv_file<M: Model>(file_path: &PathBuf) -> Result<Relation<M>, ToydbError> {
+fn load_relation_from_csv_file<M: Model>(file_path: &PathBuf) -> Result<Relation<M>, JoydbError> {
     let mut reader =
-        csv::Reader::from_path(file_path).map_err(|e| ToydbError::Deserialize(Box::new(e)))?;
+        csv::Reader::from_path(file_path).map_err(|e| JoydbError::Deserialize(Box::new(e)))?;
 
     let mut records = Vec::new();
     for result in reader.deserialize() {
-        let record: M = result.map_err(|e| ToydbError::Deserialize(Box::new(e)))?;
+        let record: M = result.map_err(|e| JoydbError::Deserialize(Box::new(e)))?;
         records.push(record);
     }
 
@@ -78,18 +78,18 @@ fn load_relation_from_csv_file<M: Model>(file_path: &PathBuf) -> Result<Relation
 fn write_relation_to_csv_file<M: Model>(
     relation: &Relation<M>,
     file_path: &PathBuf,
-) -> Result<(), ToydbError> {
+) -> Result<(), JoydbError> {
     let mut writer =
-        csv::Writer::from_path(file_path).map_err(|e| ToydbError::Serialize(Box::new(e)))?;
+        csv::Writer::from_path(file_path).map_err(|e| JoydbError::Serialize(Box::new(e)))?;
 
     for model in relation.records() {
         writer
             .serialize(model)
-            .map_err(|e| ToydbError::Serialize(Box::new(e)))?;
+            .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
     }
 
     writer
         .flush()
-        .map_err(|e| ToydbError::Serialize(Box::new(e)))?;
+        .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
     Ok(())
 }

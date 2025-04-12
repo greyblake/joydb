@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{Model, Toydb, adapters::JsonAdapter};
+use joydb::{Model, Joydb, adapters::JsonAdapter};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {
@@ -13,12 +13,12 @@ struct Post {
     title: String,
 }
 
-toydb::define_state! {
+joydb::define_state! {
     AppState,
     models: [User, Post],
 }
 
-type Db = Toydb<AppState, JsonAdapter>;
+type Db = Joydb<AppState, JsonAdapter>;
 
 const DB_FILE: &str = "dummy.json";
 

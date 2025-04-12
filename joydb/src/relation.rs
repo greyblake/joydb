@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{Model, ToydbError};
+use crate::{Model, JoydbError};
 
 #[derive(Debug)]
 pub struct Relation<M: Model> {
@@ -48,11 +48,11 @@ impl<M: Model> Relation<M> {
         &self.records
     }
 
-    pub(crate) fn insert(&mut self, record: &M) -> Result<(), ToydbError> {
+    pub(crate) fn insert(&mut self, record: &M) -> Result<(), JoydbError> {
         let id = record.id();
         let is_duplicated = self.records.iter().find(|m| m.id() == id).is_some();
         if is_duplicated {
-            return Err(ToydbError::DuplicatedId {
+            return Err(JoydbError::DuplicatedId {
                 id: format!("{:?}", id),
                 model_name: M::relation_name().to_owned(),
             });
@@ -64,20 +64,20 @@ impl<M: Model> Relation<M> {
     }
 
     // TODO: Shell it be renamed to `get()` ?
-    pub(crate) fn find(&self, id: &M::Id) -> Result<Option<M>, ToydbError> {
+    pub(crate) fn find(&self, id: &M::Id) -> Result<Option<M>, JoydbError> {
         let maybe_record = self.records.iter().find(|m| m.id() == id).cloned();
         Ok(maybe_record)
     }
 
-    pub(crate) fn all(&self) -> Result<Vec<M>, ToydbError> {
+    pub(crate) fn all(&self) -> Result<Vec<M>, JoydbError> {
         Ok(self.records.to_vec())
     }
 
-    pub(crate) fn count(&self) -> Result<usize, ToydbError> {
+    pub(crate) fn count(&self) -> Result<usize, JoydbError> {
         Ok(self.records.len())
     }
 
-    pub(crate) fn update(&mut self, new_model: M) -> Result<(), ToydbError> {
+    pub(crate) fn update(&mut self, new_model: M) -> Result<(), JoydbError> {
         let id = new_model.id();
 
         if let Some(m) = self.records.iter_mut().find(|m| m.id() == id) {
@@ -85,14 +85,14 @@ impl<M: Model> Relation<M> {
             self.meta.is_dirty = true;
             Ok(())
         } else {
-            Err(ToydbError::NotFound {
+            Err(JoydbError::NotFound {
                 id: format!("{:?}", id),
                 model_name: M::relation_name().to_owned(),
             })
         }
     }
 
-    pub(crate) fn delete(&mut self, id: &M::Id) -> Result<Option<M>, ToydbError> {
+    pub(crate) fn delete(&mut self, id: &M::Id) -> Result<Option<M>, JoydbError> {
         let index = self.records.iter().position(|m| m.id() == id);
         if let Some(index) = index {
             let record = self.records.remove(index);
@@ -266,7 +266,7 @@ mod tests {
             };
             let err = relation.insert(&another_post).unwrap_err();
 
-            assert!(matches!(err, ToydbError::DuplicatedId { .. }));
+            assert!(matches!(err, JoydbError::DuplicatedId { .. }));
             assert_eq!(
                 err.to_string(),
                 format!("Post with id = 777 already exists")
@@ -343,7 +343,7 @@ mod tests {
             };
             let err = relation.update(new_post).unwrap_err();
 
-            assert!(matches!(err, ToydbError::NotFound { .. }));
+            assert!(matches!(err, JoydbError::NotFound { .. }));
             assert_eq!(err.to_string(), format!("Post with id = 999 not found"));
         }
     }

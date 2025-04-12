@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use toydb::{Model, Toydb, adapters::PartitionedJsonAdapter};
+use joydb::{Model, Joydb, adapters::PartitionedJsonAdapter};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {
@@ -13,12 +13,12 @@ struct Post {
     title: String,
 }
 
-toydb::define_state! {
+joydb::define_state! {
     AppState,
     models: [User, Post],
 }
 
-type Db = Toydb<AppState, PartitionedJsonAdapter>;
+type Db = Joydb<AppState, PartitionedJsonAdapter>;
 
 const DB_DIR: &str = "db_data";
 

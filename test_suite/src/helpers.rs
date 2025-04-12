@@ -1,5 +1,5 @@
 use crate::database::Database;
-use toydb::adapters::JsonAdapter;
+use joydb::adapters::JsonAdapter;
 use uuid::Uuid;
 
 /// Generate a unique file path for the database file.

@@ -3,7 +3,7 @@ mod csv;
 mod json;
 
 use crate::{Model, Relation};
-use crate::{ToydbError, state::State};
+use crate::{JoydbError, state::State};
 pub use csv::CsvAdapter;
 pub use json::{JsonAdapter, PartitionedJsonAdapter};
 use std::marker::PhantomData;
@@ -20,19 +20,19 @@ use std::marker::PhantomData;
 pub trait Adapter {
     type Target: BlanketAdapter<Target = Self>;
 
-    fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError> {
+    fn write_state<S: State>(&self, state: &S) -> Result<(), JoydbError> {
         Self::Target::write_state(self, state)
     }
 
-    fn load_state<S: State>(&self) -> Result<S, ToydbError> {
+    fn load_state<S: State>(&self) -> Result<S, JoydbError> {
         Self::Target::load_state(self)
     }
 }
 
 pub trait BlanketAdapter {
     type Target;
-    fn write_state<S: State>(target: &Self::Target, state: &S) -> Result<(), ToydbError>;
-    fn load_state<S: State>(target: &Self::Target) -> Result<S, ToydbError>;
+    fn write_state<S: State>(target: &Self::Target, state: &S) -> Result<(), JoydbError>;
+    fn load_state<S: State>(target: &Self::Target) -> Result<S, JoydbError>;
 }
 
 // Imlpement Adapter though UnifiedAdapter
@@ -41,11 +41,11 @@ pub struct Unified<UA: UnifiedAdapter>(PhantomData<UA>);
 impl<UA: UnifiedAdapter> BlanketAdapter for Unified<UA> {
     type Target = UA;
 
-    fn write_state<S: State>(target: &UA, state: &S) -> Result<(), ToydbError> {
+    fn write_state<S: State>(target: &UA, state: &S) -> Result<(), JoydbError> {
         target.write_state(state)
     }
 
-    fn load_state<S: State>(target: &UA) -> Result<S, ToydbError> {
+    fn load_state<S: State>(target: &UA) -> Result<S, JoydbError> {
         target.load_state()
     }
 }
@@ -56,22 +56,22 @@ pub struct Partitioned<PA: PartitionedAdapter>(PhantomData<PA>);
 impl<PA: PartitionedAdapter> BlanketAdapter for Partitioned<PA> {
     type Target = PA;
 
-    fn write_state<S: State>(target: &PA, state: &S) -> Result<(), ToydbError> {
+    fn write_state<S: State>(target: &PA, state: &S) -> Result<(), JoydbError> {
         S::write_with_partitioned_adapter(state, target)
     }
 
-    fn load_state<S: State>(target: &PA) -> Result<S, ToydbError> {
+    fn load_state<S: State>(target: &PA) -> Result<S, JoydbError> {
         target.load_state()
     }
 }
 
 pub trait UnifiedAdapter {
-    // fn read_state<S: State>(&self) -> Result<S, ToydbError>;
-    fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError>;
+    // fn read_state<S: State>(&self) -> Result<S, JoydbError>;
+    fn write_state<S: State>(&self, state: &S) -> Result<(), JoydbError>;
 
     /// Is called only once when the database is opened or created.
     /// Usually the adapter should check if the files exist and if not, create them.
-    fn load_state<S: State>(&self) -> Result<S, ToydbError>;
+    fn load_state<S: State>(&self) -> Result<S, JoydbError>;
 }
 
 /// The idea behind this trait is to allow storing relations in separate files.
@@ -81,10 +81,10 @@ pub trait UnifiedAdapter {
 ///
 /// But at the moment it's postponed.
 pub trait PartitionedAdapter {
-    fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError>;
+    fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), JoydbError>;
 
-    fn load_state<S: State>(&self) -> Result<S, ToydbError>;
+    fn load_state<S: State>(&self) -> Result<S, JoydbError>;
 
     // Is meant to be called by State, because State knows concrete type of M.
-    fn load_relation<M: Model>(&self) -> Result<Relation<M>, ToydbError>;
+    fn load_relation<M: Model>(&self) -> Result<Relation<M>, JoydbError>;
 }

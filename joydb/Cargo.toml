@@ -1,5 +1,5 @@
 [package]
-name = "toydb"
+name = "joydb"
 version = "0.1.1"
 edition = "2024"
 
@@ -9,7 +9,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-toydb_macros = { path = "../toydb_macros", version = "0.1.1" }
+joydb_macros = { path = "../joydb_macros", version = "0.1.1" }
 serde = { version = "1.0" }
 serde_json = { version = "1.0" }
 thiserror = "2.0"

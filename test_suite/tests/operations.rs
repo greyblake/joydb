@@ -1,5 +1,5 @@
 use test_suite::helpers::with_open_db;
-use toydb::ToydbError;
+use joydb::JoydbError;
 use uuid::Uuid;
 
 use test_suite::database::{Post, User};
@@ -46,7 +46,7 @@ fn should_return_error_on_attempt_to_insert_record_with_duplicated_id() {
 
         // Check the error
         let err = db.insert(&another_alice).unwrap_err();
-        assert!(matches!(err, ToydbError::DuplicatedId { .. }));
+        assert!(matches!(err, JoydbError::DuplicatedId { .. }));
         assert_eq!(
             err.to_string(),
             format!("User with id = {alice_id} already exists")
@@ -94,7 +94,7 @@ fn should_return_error_on_update_if_record_does_not_exist() {
         let alice_id = alice.id;
 
         let err = db.update(alice).unwrap_err();
-        assert!(matches!(err, ToydbError::NotFound { .. }));
+        assert!(matches!(err, JoydbError::NotFound { .. }));
         assert_eq!(
             err.to_string(),
             format!("User with id = {alice_id} not found")

@@ -1,7 +1,7 @@
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 
-use crate::{Model, Relation, ToydbError, adapters::PartitionedAdapter};
+use crate::{Model, Relation, JoydbError, adapters::PartitionedAdapter};
 
 pub trait State: Default + Debug + Serialize + DeserializeOwned {
     fn is_dirty(&self) -> bool;
@@ -11,11 +11,11 @@ pub trait State: Default + Debug + Serialize + DeserializeOwned {
     fn write_with_partitioned_adapter<PA: PartitionedAdapter>(
         &self,
         adapter: &PA,
-    ) -> Result<(), crate::ToydbError>;
+    ) -> Result<(), crate::JoydbError>;
 
     fn load_with_partitioned_adapter<PA: PartitionedAdapter>(
         adapter: &PA,
-    ) -> Result<Self, ToydbError>;
+    ) -> Result<Self, JoydbError>;
 }
 
 /// A utility trait that implemented by a state that can store a relation of a model.
@@ -43,11 +43,11 @@ macro_rules! define_state {
         #[allow(non_snake_case)]
         pub struct $state_type {
             $(
-                $model_type: ::toydb::Relation<$model_type>
+                $model_type: ::joydb::Relation<$model_type>
             ),+
         }
 
-        impl ::toydb::State for $state_type {
+        impl ::joydb::State for $state_type {
             fn is_dirty(&self) -> bool {
                 $(
                     self.$model_type.is_dirty()
@@ -60,7 +60,7 @@ macro_rules! define_state {
                 )*
             }
 
-            fn write_with_partitioned_adapter<PA: ::toydb::adapters::PartitionedAdapter>(&self, adapter: &PA) -> Result<(), ::toydb::ToydbError> {
+            fn write_with_partitioned_adapter<PA: ::joydb::adapters::PartitionedAdapter>(&self, adapter: &PA) -> Result<(), ::joydb::JoydbError> {
                 $(
                     {
                         let relation = &self.$model_type;
@@ -72,7 +72,7 @@ macro_rules! define_state {
                 Ok(())
             }
 
-            fn load_with_partitioned_adapter<PA: ::toydb::adapters::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::toydb::ToydbError> {
+            fn load_with_partitioned_adapter<PA: ::joydb::adapters::PartitionedAdapter>(adapter: &PA) -> Result<Self, ::joydb::JoydbError> {
                 let mut state = Self::default();
                 $(
                     state.$model_type = adapter.load_relation::<$model_type>()?;
@@ -82,12 +82,12 @@ macro_rules! define_state {
         }
 
         $(
-            impl ::toydb::GetRelation<$model_type> for $state_type {
-                fn get_relation_mut(&mut self) -> &mut ::toydb::Relation<$model_type> {
+            impl ::joydb::GetRelation<$model_type> for $state_type {
+                fn get_relation_mut(&mut self) -> &mut ::joydb::Relation<$model_type> {
                     &mut self.$model_type
                 }
 
-                fn get_relation(&self) -> &::toydb::Relation<$model_type> {
+                fn get_relation(&self) -> &::joydb::Relation<$model_type> {
                     &self.$model_type
                 }
             }

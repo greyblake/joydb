@@ -5,10 +5,10 @@ mod model;
 mod relation;
 mod state;
 
-pub use db::Toydb;
-pub use error::ToydbError;
+pub use db::Joydb;
+pub use error::JoydbError;
 pub use model::Model;
 pub use relation::Relation;
 pub use state::{GetRelation, State};
 
-pub use toydb_macros::Model;
+pub use joydb_macros::Model;
