@@ -12,12 +12,31 @@ pub enum ToydbError {
     #[error("{0} is not a directory")]
     NotDirectory(PathBuf),
 
-    #[error("JSON error: {0}")]
-    Json(#[from] serde_json::Error),
+    /// Serialization error.
+    /// This may occur when adapter format is not supporting the data type.
+    /// For example, if you try to serialize a HashMap with K type as a complex structure to JSON.
+    #[error("Serialize error: {0}")]
+    Serialize(Box<dyn std::error::Error + Send + Sync>),
 
+    /// Deserialization error.
+    /// May occur on opening a file.
+    #[error("Deserialize error: {0}")]
+    Deserialize(Box<dyn std::error::Error + Send + Sync>),
+
+    /// Error when trying to insert a model with an ID that already exists.
     #[error("{model_name} with id = {id} already exists")]
-    DuplicatedId { id: String, model_name: String },
+    DuplicatedId {
+        /// ID of the model formatted with `Debug`
+        id: String,
+        /// Name of the model (type name)
+        model_name: String,
+    },
 
     #[error("{model_name} with id = {id} not found")]
     NotFound { id: String, model_name: String },
+
+    /// Custom error variant. Intended for third party adapters for situations
+    /// when non of the existing variants are suitable.
+    #[error("Custom error: {0}")]
+    Custom(Box<dyn std::error::Error + Send + Sync>),
 }

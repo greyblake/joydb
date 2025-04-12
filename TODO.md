@@ -1,3 +1,7 @@
+### Adapters
+
+- [ ] CSV adapter
+
 ### Flushing
 - [ ] Spawn a separate thread on `open` to flush database with some interval
   -  The thread should own a weak ref (see `Arc::downgrade`)

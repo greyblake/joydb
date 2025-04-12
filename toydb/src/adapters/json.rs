@@ -17,7 +17,8 @@ impl JsonAdapter {
 
 impl UnifiedAdapter for JsonAdapter {
     fn write_state<S: State>(&self, state: &S) -> Result<(), ToydbError> {
-        let json = serde_json::to_string_pretty(state)?;
+        let json =
+            serde_json::to_string_pretty(state).map_err(|e| ToydbError::Serialize(Box::new(e)))?;
         let mut file = std::fs::File::create(&self.path)?;
         file.write_all(json.as_bytes())?;
         Ok(())
@@ -33,7 +34,8 @@ impl UnifiedAdapter for JsonAdapter {
                 let mut file = std::fs::File::open(&self.path)?;
                 let mut contents = String::new();
                 file.read_to_string(&mut contents)?;
-                let state = serde_json::from_str(&contents)?;
+                let state = serde_json::from_str(&contents)
+                    .map_err(|e| ToydbError::Deserialize(Box::new(e)))?;
                 Ok(state)
             }
         } else {
@@ -70,7 +72,8 @@ impl PartitionedJsonAdapter {
 impl PartitionedAdapter for PartitionedJsonAdapter {
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), ToydbError> {
         let file_path = self.relation_file_path::<M>();
-        let json = serde_json::to_string_pretty(relation)?;
+        let json = serde_json::to_string_pretty(relation)
+            .map_err(|e| ToydbError::Serialize(Box::new(e)))?;
         let mut file = std::fs::File::create(&file_path)?;
         file.write_all(json.as_bytes())?;
         Ok(())
@@ -88,7 +91,8 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
                 let mut file = std::fs::File::open(&file_path)?;
                 let mut contents = String::new();
                 file.read_to_string(&mut contents)?;
-                let relation = serde_json::from_str(&contents)?;
+                let relation = serde_json::from_str(&contents)
+                    .map_err(|e| ToydbError::Deserialize(Box::new(e)))?;
                 Ok(relation)
             }
         } else {
