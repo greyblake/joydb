@@ -1,7 +1,7 @@
 use crate::Model;
 use crate::adapters::Adapter;
 use crate::{
-    Relation, JoydbError,
+    JoydbError, Relation,
     state::{GetRelation, State},
 };
 use std::fmt::Debug;
@@ -228,4 +228,26 @@ impl<S: State, A: Adapter> Drop for InnerJoydb<S, A> {
             eprintln!("Failed to flush the database: {}", err);
         }
     }
+}
+
+/// Specifies how and when the database should be synchronized with the file system.
+pub enum SyncMode {
+    /// The data are flushed to the file system instantly with every mutable operation.
+    /// This is the default mode.
+    /// This mode is the slowest, but the safest.
+    Instant,
+
+    /// The data are flushed to the file system periodically by a thread
+    /// that runs in the background.
+    Periodic(std::time::Duration),
+
+    /// The data are flushed to the file system manually when the [Joydb::flush] method is called.
+    /// The only exception is on drop, which always flushes the data.
+    Manual,
+
+    /// The data are never flushed to the file system. Even when [Joydb::flush] is explicitly
+    /// called.
+    /// With this mode, Joydb acts like in-memory-only database and this mode is mostly intended
+    /// for unit tests.
+    Never,
 }

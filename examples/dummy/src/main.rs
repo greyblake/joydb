@@ -1,5 +1,5 @@
+use joydb::{Joydb, Model, adapters::JsonAdapter};
 use serde::{Deserialize, Serialize};
-use joydb::{Model, Joydb, adapters::JsonAdapter};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {

@@ -1,6 +1,6 @@
 use crate::adapters::{Adapter, Partitioned, PartitionedAdapter};
-use crate::{Model, Relation};
 use crate::{JoydbError, state::State};
+use crate::{Model, Relation};
 use std::path::PathBuf;
 
 pub struct CsvAdapter {

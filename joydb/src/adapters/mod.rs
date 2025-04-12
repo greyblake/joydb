@@ -2,8 +2,8 @@
 mod csv;
 mod json;
 
-use crate::{Model, Relation};
 use crate::{JoydbError, state::State};
+use crate::{Model, Relation};
 pub use csv::CsvAdapter;
 pub use json::{JsonAdapter, PartitionedJsonAdapter};
 use std::marker::PhantomData;

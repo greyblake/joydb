@@ -1,8 +1,8 @@
 
 - [x] Rename to `joydb`
-- [ ] Add description and keywords in Cargo.toml
-- [ ] Publish 0.0.1 on crates.io
-- [ ] Introduce a flushing strategy. Would would be a good name for that?
+- [x] Add description and keywords in Cargo.toml
+- [x] Publish 0.0.1 on crates.io
+- [ ] Introduce a flushing strategy. Would would be a good name for that? SyncMode!?
 
 ### Adapters
 

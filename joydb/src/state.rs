@@ -1,7 +1,7 @@
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
 
-use crate::{Model, Relation, JoydbError, adapters::PartitionedAdapter};
+use crate::{JoydbError, Model, Relation, adapters::PartitionedAdapter};
 
 pub trait State: Default + Debug + Serialize + DeserializeOwned {
     fn is_dirty(&self) -> bool;

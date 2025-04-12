@@ -1,5 +1,5 @@
-use test_suite::helpers::with_open_db;
 use joydb::JoydbError;
+use test_suite::helpers::with_open_db;
 use uuid::Uuid;
 
 use test_suite::database::{Post, User};

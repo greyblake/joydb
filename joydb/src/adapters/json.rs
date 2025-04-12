@@ -1,6 +1,6 @@
 use crate::adapters::{Adapter, Partitioned, PartitionedAdapter, Unified, UnifiedAdapter};
-use crate::{Model, Relation};
 use crate::{JoydbError, state::State};
+use crate::{Model, Relation};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 

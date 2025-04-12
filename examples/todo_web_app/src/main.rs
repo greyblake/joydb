@@ -4,9 +4,9 @@ use axum::{
     response::{Html, IntoResponse},
     routing::{get, post},
 };
+use joydb::{Joydb, Model, adapters::JsonAdapter, define_state};
 use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
-use joydb::{Model, Joydb, adapters::JsonAdapter, define_state};
 use uuid::Uuid;
 
 #[tokio::main]

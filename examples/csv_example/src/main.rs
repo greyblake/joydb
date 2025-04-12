@@ -1,5 +1,5 @@
+use joydb::{Joydb, Model, adapters::CsvAdapter};
 use serde::{Deserialize, Serialize};
-use joydb::{Model, Joydb, adapters::CsvAdapter};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 struct User {

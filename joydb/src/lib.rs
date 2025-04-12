@@ -5,7 +5,7 @@ mod model;
 mod relation;
 mod state;
 
-pub use db::Joydb;
+pub use db::{Joydb, SyncMode};
 pub use error::JoydbError;
 pub use model::Model;
 pub use relation::Relation;

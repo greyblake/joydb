@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{Model, JoydbError};
+use crate::{JoydbError, Model};
 
 #[derive(Debug)]
 pub struct Relation<M: Model> {

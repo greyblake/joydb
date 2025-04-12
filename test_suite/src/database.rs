@@ -1,5 +1,5 @@
+use joydb::{Joydb, Model, adapters::JsonAdapter, define_state};
 use serde::{Deserialize, Serialize};
-use joydb::{Model, Joydb, adapters::JsonAdapter, define_state};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
