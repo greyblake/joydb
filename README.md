@@ -1,4 +1,8 @@
+# Joydb
 
+An in-memory embedded database with persistence and multiple adapters (JSON, CSV, etc).
+Acts like a minimalistic ORM with zero setup.
+Simple, lightweight, and perfect for prototypes, small apps, or experiments.
 
 
 ## Ideas
@@ -9,12 +13,12 @@
 - On every `write` operation
 - In parallel thread (every N secods)
 
-### Format adapters
+### Adapters
 
-- Single JSON file
-- Multiple JSON files (database is a directory, every single JSON file represents a relation)
-- Multiple CSV files (database is directory, every single CSV file represents a relation)
-
+- JSON
+- CSV
+- RON
+- YAML
 
 
 ### Similar projects
