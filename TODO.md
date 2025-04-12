@@ -1,4 +1,7 @@
-- [ ] Rename to `joydb`
+
+- [x] Rename to `joydb`
+- [ ] Add description and keywords in Cargo.toml
+- [ ] Publish 0.0.1 on crates.io
 - [ ] Introduce a flushing strategy. Would would be a good name for that?
 
 ### Adapters
@@ -67,3 +70,16 @@
     - `zerodb`
     - `filedb`
     - `sundb`
+
+
+### Description
+
+I am working on a Rust crate called `joydb`.
+The idea of the crate is to:
+- Be extremely easy to start using, avoiding all setup complexities of a real database and ORM
+- Provide a persisting storage in files (like embedded DB)
+- Keep the entire storage in memory (but flushing data to file system when necessary)
+- Supporting multiple adapters (JSON, CSV, etc)
+- Be very easy to use and simple by design
+- Not intended for heavy load or serious production usage
+

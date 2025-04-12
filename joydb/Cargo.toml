@@ -2,9 +2,16 @@
 name = "joydb"
 version = "0.0.1"
 edition = "2024"
+authors = ["Serhii Potapov <blake131313@gmail.com>"]
 
-description = "Naive embedded database for Rust"
+description = "An in-memory embedded database with persistence and multiple adapters (JSON, CSV, etc). Acts like a minimalistic ORM with zero setup. Simple, lightweight, and perfect for prototypes, small apps, or experiments."
+keywords = ["database", "ORM", "JSON", "embedded", "file"]
+categories = ["database-implementations", "database"]
 license = "MIT"
+repository = "https://github.com/greyblake/joydb"
+homepage = "https://github.com/greyblake/joydb"
+documentation = "https://docs.rs/joydb"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

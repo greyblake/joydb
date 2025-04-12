@@ -2,6 +2,14 @@
 name = "joydb_macros"
 version = "0.0.1"
 edition = "2024"
+description = "An in-memory embedded database with persistence and multiple adapters (JSON, CSV, etc). Acts like a minimalistic ORM with zero setup. Simple, lightweight, and perfect for prototypes, small apps, or experiments."
+keywords = ["database", "ORM", "JSON", "embedded", "file"]
+categories = ["database-implementations", "database"]
+license = "MIT"
+repository = "https://github.com/greyblake/joydb"
+homepage = "https://github.com/greyblake/joydb"
+documentation = "https://docs.rs/joydb"
+readme = "README.md"
 
 [dependencies]
 proc-macro2 = "1.0"
