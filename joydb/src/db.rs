@@ -36,8 +36,8 @@ impl<S: State, A: Adapter> Clone for Joydb<S, A> {
 }
 
 impl<S: State, A: Adapter> Joydb<S, A> {
-    pub fn open_with_adapter(adapter: A) -> Result<Self, JoydbError> {
-        let inner: InnerJoydb<S, A> = InnerJoydb::open_with_adapter(adapter)?;
+    pub fn open(adapter: A, sync_mode: SyncMode) -> Result<Self, JoydbError> {
+        let inner: InnerJoydb<S, A> = InnerJoydb::open(adapter, sync_mode)?;
         Ok(Self {
             inner: Arc::new(Mutex::new(inner)),
         })
@@ -132,12 +132,17 @@ impl<S: State, A: Adapter> Joydb<S, A> {
 struct InnerJoydb<S: State, A: Adapter> {
     state: S,
     adapter: A,
+    sync_mode: SyncMode,
 }
 
 impl<S: State, A: Adapter> InnerJoydb<S, A> {
-    fn open_with_adapter(adapter: A) -> Result<Self, JoydbError> {
+    fn open(adapter: A, sync_mode: SyncMode) -> Result<Self, JoydbError> {
         let state = adapter.load_state::<S>()?;
-        Ok(Self { state, adapter })
+        Ok(Self {
+            state,
+            adapter,
+            sync_mode,
+        })
     }
 
     /// Write data to the file system if there are unsaved changes.
@@ -178,7 +183,9 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         S: GetRelation<M>,
     {
         let relation = self.get_relation_mut::<M>();
-        relation.insert(model)
+        relation.insert(model)?;
+        self.after_change()?;
+        Ok(())
     }
 
     fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
@@ -210,7 +217,9 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         S: GetRelation<M>,
     {
         let relation = self.get_relation_mut::<M>();
-        relation.update(new_model)
+        relation.update(new_model)?;
+        self.after_change()?;
+        Ok(())
     }
 
     fn delete<M: Model>(&mut self, id: &M::Id) -> Result<Option<M>, JoydbError>
@@ -218,7 +227,19 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         S: GetRelation<M>,
     {
         let relation = self.get_relation_mut::<M>();
-        relation.delete(id)
+        let maybe_deleted_record = relation.delete(id)?;
+        if maybe_deleted_record.is_some() {
+            self.after_change()?;
+        }
+        Ok(maybe_deleted_record)
+    }
+
+    /// Hook which  is called every time after database state has changed.
+    fn after_change(&mut self) -> Result<(), JoydbError> {
+        if self.sync_mode == SyncMode::Instant {
+            self.flush()?;
+        }
+        Ok(())
     }
 }
 
@@ -231,6 +252,7 @@ impl<S: State, A: Adapter> Drop for InnerJoydb<S, A> {
 }
 
 /// Specifies how and when the database should be synchronized with the file system.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SyncMode {
     /// The data are flushed to the file system instantly with every mutable operation.
     /// This is the default mode.

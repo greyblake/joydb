@@ -44,6 +44,8 @@ impl<M: Model> Relation<M> {
         self.meta.is_dirty = false;
     }
 
+    /// Returns reference to the records.
+    /// This is intended to be used only by partitioned adapters.
     pub fn records(&self) -> &[M] {
         &self.records
     }
