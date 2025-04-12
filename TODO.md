@@ -1,4 +1,5 @@
 - [ ] Rename to `joydb`
+- [ ] Introduce a flushing strategy. Would would be a good name for that?
 
 ### Adapters
 
