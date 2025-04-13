@@ -2,18 +2,19 @@
 - [x] Add description and keywords in Cargo.toml
 - [x] Publish 0.0.1 on crates.io
 - [x] Introduce a flushing strategy. Would would be a good name for that? SyncMode!?
+- [ ] Add Justfile to run all the examples (as long as other tests and other checks)
 
 ### Adapters
 
 - [x] Put adapters behind features
 - [x] CSV adapter
 - [x] RON adapters
-- [ ] Add examples for all the adapters.
-- [ ] Add Justfile to run all the examples (as long as other tests and other checks)
+- [x] Add examples for all the adapters.
+- [ ] Refactor adapters, to extract common parts that interact with the file system.
+- [ ] Adjust adapters to write to a tmp file, than replace the original file. (Write-Rename pattern)
 
 ### Flushing
-- [x] Spawn a separate thread on `open` to flush database with some interval
-  -  The thread should own a weak ref (see `Arc::downgrade`)
+- [x] Spawn a separate thread on `open` to flush database with some interval. The thread should own a weak ref (see `Arc::downgrade`)
 
 
 ### CRUD methods:
@@ -28,6 +29,9 @@
 - [ ] Finalize naming of the methods
 - [ ] Rename `GetRelation` to something else?
 - [ ] Address all TODOs
+- [ ] Refine error variants
+- [ ] Replace `Serialize` with `Write`. Add extra information to the error (what exactly caused the problem?)
+- [ ] Replace `Deserialize` with `Read`. Add extra info.
 
 
 ### Setup CI

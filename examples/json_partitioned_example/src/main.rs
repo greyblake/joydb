@@ -1,4 +1,4 @@
-use joydb::{Joydb, Model, adapters::JsonAdapter};
+use joydb::{Joydb, Model, adapters::JsonPartitionedAdapter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
@@ -18,17 +18,17 @@ joydb::define_state! {
     models: [User, Post],
 }
 
-type Db = Joydb<AppState, JsonAdapter>;
+type Db = Joydb<AppState, JsonPartitionedAdapter>;
 
-const DATA_FILE: &str = "data.json";
+const DATA_DIR: &str = "data";
 
 fn main() {
     // Delete the file if it exists
-    std::fs::remove_file(DATA_FILE).ok();
+    std::fs::remove_file(DATA_DIR).ok();
 
     // Insert some data
     {
-        let db = Db::open(DATA_FILE).unwrap();
+        let db = Db::open(DATA_DIR).unwrap();
 
         db.insert(&User {
             id: 1,
@@ -51,7 +51,7 @@ fn main() {
 
     // Load the data back
     {
-        let db = Db::open(DATA_FILE).unwrap();
+        let db = Db::open(DATA_DIR).unwrap();
         let alice: User = db.find(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 

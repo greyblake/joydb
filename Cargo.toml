@@ -7,5 +7,5 @@ members = [
     "examples/csv_example",
     "examples/dummy",
     "examples/todo_web_app",
-    "test_suite", "examples/ron_example", "examples/ron_partitioned_example",
+    "test_suite", "examples/ron_example", "examples/ron_partitioned_example", "examples/json_partitioned_example",
 ]
