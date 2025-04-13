@@ -7,6 +7,15 @@ Not intended for serious production use, optimized for nothing but ergonomics.
 
 ## Get started
 
+Install prerequisites:
+
+```
+cargo install serde --features derive
+cargo install joydb --features json
+```
+
+Example:
+
 ```rust
 use joydb::{Joydb, Model, adapters::JsonAdapter};
 use serde::{Deserialize, Serialize};

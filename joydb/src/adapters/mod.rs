@@ -10,6 +10,12 @@ mod json;
 #[cfg(feature = "json")]
 pub use json::{JsonAdapter, PartitionedJsonAdapter};
 
+#[cfg(feature = "ron")]
+mod ron;
+
+#[cfg(feature = "ron")]
+pub use ron::{PartitionedRonAdapter, RonAdapter};
+
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
 use std::marker::PhantomData;

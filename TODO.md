@@ -5,9 +5,9 @@
 
 ### Adapters
 
-- [ ] Put adapters behind features
+- [x] Put adapters behind features
 - [x] CSV adapter
-- [ ] RON adapters
+- [x] RON adapters
 - [ ] YAML adapters
 
 ### Flushing

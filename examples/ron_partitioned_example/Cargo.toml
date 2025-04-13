@@ -1,0 +1,8 @@
+[package]
+name = "ron_partitioned_example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+joydb = { path = "../../joydb", features = ["ron"] }
+serde = { version = "1", features = ["derive"] }
