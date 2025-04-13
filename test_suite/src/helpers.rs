@@ -23,7 +23,7 @@ where
             sync_policy: SyncPolicy::Instant,
         },
     };
-    let db = Database::open(config).unwrap();
+    let db = Database::open_with_config(config).unwrap();
     f(db);
     std::fs::remove_file(file_path).unwrap();
 }

@@ -35,7 +35,7 @@ fn main() {
                 sync_policy: SyncPolicy::Instant,
             },
         };
-        let db = Db::open(config).unwrap();
+        let db = Db::open_with_config(config).unwrap();
 
         db.insert(&User {
             id: 1,
@@ -65,7 +65,7 @@ fn main() {
                 sync_policy: SyncPolicy::Instant,
             },
         };
-        let db = Db::open(config).unwrap();
+        let db = Db::open_with_config(config).unwrap();
         let alice: User = db.find(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 

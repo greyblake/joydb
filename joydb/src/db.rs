@@ -37,10 +37,10 @@ impl<S: State, A: Adapter> Clone for Joydb<S, A> {
 }
 
 impl<S: State, A: Adapter> Joydb<S, A> {
-    pub fn open(config: JoydbConfig<A>) -> Result<Self, JoydbError> {
+    pub fn open_with_config(config: JoydbConfig<A>) -> Result<Self, JoydbError> {
         let maybe_sync_policy = config.sync_policy();
 
-        let inner: InnerJoydb<S, A> = InnerJoydb::open(config)?;
+        let inner: InnerJoydb<S, A> = InnerJoydb::open_with_config(config)?;
         let arc_inner = Arc::new(Mutex::new(inner));
 
         if let Some(SyncPolicy::Periodic(duration)) = maybe_sync_policy {
@@ -78,6 +78,7 @@ impl<S: State, A: Adapter> Joydb<S, A> {
     /// # Example
     ///
     /// TODO
+    // TODO: Rename To `get()` ?
     pub fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
     where
         S: GetRelation<M>,
@@ -143,7 +144,7 @@ struct InnerJoydb<S: State, A: Adapter> {
 }
 
 impl<S: State, A: Adapter> InnerJoydb<S, A> {
-    fn open(config: JoydbConfig<A>) -> Result<Self, JoydbError> {
+    fn open_with_config(config: JoydbConfig<A>) -> Result<Self, JoydbError> {
         let JoydbConfig { mode } = config;
 
         // Get the initial state

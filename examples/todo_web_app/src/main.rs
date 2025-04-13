@@ -21,7 +21,7 @@ async fn main() {
             sync_policy: SyncPolicy::Periodic(Duration::from_secs(5)),
         },
     };
-    let db = Db::open(config).unwrap();
+    let db = Db::open_with_config(config).unwrap();
 
     // Create an Axum router with routes
     let app = Router::new()

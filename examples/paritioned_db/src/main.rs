@@ -30,7 +30,7 @@ fn main() {
             sync_policy: SyncPolicy::Manual,
         },
     };
-    let db = Db::open(config).unwrap();
+    let db = Db::open_with_config(config).unwrap();
 
     db.insert(&User {
         id: 1,

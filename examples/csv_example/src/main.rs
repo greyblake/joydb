@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 sync_policy: SyncPolicy::Instant,
             },
         };
-        let db = Db::open(config)?;
+        let db = Db::open_with_config(config)?;
 
         db.insert(&User {
             id: 1,
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 sync_policy: SyncPolicy::Instant,
             },
         };
-        let db = Db::open(config)?;
+        let db = Db::open_with_config(config)?;
 
         let alice = db.find::<User>(&1)?.unwrap();
         assert_eq!(alice.name, "Alice");
