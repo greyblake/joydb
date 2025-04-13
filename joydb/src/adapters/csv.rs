@@ -1,16 +1,24 @@
 use crate::adapters::{Adapter, Partitioned, PartitionedAdapter};
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use super::FromPath;
 
 pub struct CsvAdapter {
     dir_path: PathBuf,
 }
 
+impl FromPath for CsvAdapter {
+    fn from_path<P: AsRef<Path>>(dir_path: P) -> Self {
+        Self::new(dir_path)
+    }
+}
+
 impl CsvAdapter {
-    pub fn new(dir_path: impl Into<PathBuf>) -> Self {
+    pub fn new<P: AsRef<Path>>(dir_path: P) -> Self {
         Self {
-            dir_path: dir_path.into(),
+            dir_path: dir_path.as_ref().to_path_buf(),
         }
     }
 

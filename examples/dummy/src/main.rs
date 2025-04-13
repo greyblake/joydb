@@ -1,4 +1,4 @@
-use joydb::{Joydb, JoydbConfig, JoydbMode, Model, SyncPolicy, adapters::JsonAdapter};
+use joydb::{Joydb, Model, adapters::JsonAdapter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
@@ -28,14 +28,7 @@ fn main() {
 
     // Insert some data
     {
-        let adapter = JsonAdapter::new(DB_FILE);
-        let config = JoydbConfig {
-            mode: JoydbMode::Persistent {
-                adapter,
-                sync_policy: SyncPolicy::Instant,
-            },
-        };
-        let db = Db::open_with_config(config).unwrap();
+        let db = Db::open(DB_FILE).unwrap();
 
         db.insert(&User {
             id: 1,
@@ -58,14 +51,7 @@ fn main() {
 
     // Load the data back
     {
-        let adapter = JsonAdapter::new(DB_FILE);
-        let config = JoydbConfig {
-            mode: JoydbMode::Persistent {
-                adapter,
-                sync_policy: SyncPolicy::Instant,
-            },
-        };
-        let db = Db::open_with_config(config).unwrap();
+        let db = Db::open(DB_FILE).unwrap();
         let alice: User = db.find(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 

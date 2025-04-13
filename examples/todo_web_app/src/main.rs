@@ -13,6 +13,29 @@ use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+// --- STORAGE ---
+
+const DB_PATH: &str = "db.json";
+
+#[derive(Debug, Serialize, Deserialize, Clone, Model)]
+struct Todo {
+    id: Uuid,
+    name: String,
+    completed: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct NewTodo {
+    name: String,
+}
+
+define_state!(
+    DbState,
+    models: [Todo],
+);
+
+type Db = Joydb<DbState, JsonAdapter>;
+
 #[tokio::main]
 async fn main() {
     let config = JoydbConfig {
@@ -45,29 +68,6 @@ async fn main() {
         .await
         .unwrap();
 }
-
-// --- STORAGE ---
-
-const DB_PATH: &str = "db.json";
-
-#[derive(Debug, Serialize, Deserialize, Clone, Model)]
-struct Todo {
-    id: Uuid,
-    name: String,
-    completed: bool,
-}
-
-#[derive(Debug, Deserialize)]
-struct NewTodo {
-    name: String,
-}
-
-define_state!(
-    DbState,
-    models: [Todo],
-);
-
-type Db = Joydb<DbState, JsonAdapter>;
 
 // --- HANDLERS ---
 

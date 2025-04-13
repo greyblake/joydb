@@ -1,11 +1,12 @@
 use crate::Model;
-use crate::adapters::Adapter;
+use crate::adapters::{Adapter, FromPath};
 use crate::{
     JoydbError, Relation,
     state::{GetRelation, State},
 };
 use std::fmt::Debug;
 use std::ops::Drop;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -33,6 +34,19 @@ impl<S: State, A: Adapter> Clone for Joydb<S, A> {
         Self {
             inner: self.inner.clone(),
         }
+    }
+}
+
+impl<S: State, A: Adapter + FromPath> Joydb<S, A> {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, JoydbError> {
+        let adapter = A::from_path(path);
+        let config = JoydbConfig {
+            mode: JoydbMode::Persistent {
+                adapter,
+                sync_policy: SyncPolicy::Instant,
+            },
+        };
+        Self::open_with_config(config)
     }
 }
 

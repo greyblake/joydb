@@ -2,16 +2,26 @@ use crate::adapters::{Adapter, Partitioned, PartitionedAdapter, Unified, Unified
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use super::FromPath;
 
 // TODO: add `pretty` boolean?
 pub struct JsonAdapter {
-    path: PathBuf,
+    file_path: PathBuf,
+}
+
+impl FromPath for JsonAdapter {
+    fn from_path<P: AsRef<Path>>(file_path: P) -> Self {
+        Self::new(file_path)
+    }
 }
 
 impl JsonAdapter {
-    pub fn new(path: impl Into<PathBuf>) -> Self {
-        Self { path: path.into() }
+    pub fn new<P: AsRef<Path>>(file_path: P) -> Self {
+        Self {
+            file_path: file_path.as_ref().to_path_buf(),
+        }
     }
 }
 
@@ -19,19 +29,19 @@ impl UnifiedAdapter for JsonAdapter {
     fn write_state<S: State>(&self, state: &S) -> Result<(), JoydbError> {
         let json =
             serde_json::to_string_pretty(state).map_err(|e| JoydbError::Serialize(Box::new(e)))?;
-        let mut file = std::fs::File::create(&self.path)?;
+        let mut file = std::fs::File::create(&self.file_path)?;
         file.write_all(json.as_bytes())?;
         Ok(())
     }
 
     fn load_state<S: State>(&self) -> Result<S, JoydbError> {
-        if self.path.exists() {
-            if !self.path.is_file() {
+        if self.file_path.exists() {
+            if !self.file_path.is_file() {
                 // If the path exists but is not a file, then return an error
-                Err(JoydbError::NotFile(self.path.clone()))
+                Err(JoydbError::NotFile(self.file_path.clone()))
             } else {
                 // Otherwise read the state from the existing file
-                let mut file = std::fs::File::open(&self.path)?;
+                let mut file = std::fs::File::open(&self.file_path)?;
                 let mut contents = String::new();
                 file.read_to_string(&mut contents)?;
                 let state = serde_json::from_str(&contents)
@@ -51,16 +61,21 @@ impl Adapter for JsonAdapter {
     type Target = Unified<Self>;
 }
 
-// --------------------------- //
-
+// TODO: add `pretty` boolean?
 pub struct PartitionedJsonAdapter {
     dir_path: PathBuf,
 }
 
+impl FromPath for PartitionedJsonAdapter {
+    fn from_path<P: AsRef<Path>>(dir_path: P) -> Self {
+        Self::new(dir_path)
+    }
+}
+
 impl PartitionedJsonAdapter {
-    pub fn new(dir_path: impl Into<PathBuf>) -> Self {
+    pub fn new<P: AsRef<Path>>(dir_path: P) -> Self {
         Self {
-            dir_path: dir_path.into(),
+            dir_path: dir_path.as_ref().to_path_buf(),
         }
     }
 

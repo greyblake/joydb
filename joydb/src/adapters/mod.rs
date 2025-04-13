@@ -7,6 +7,7 @@ use crate::{Model, Relation};
 pub use csv::CsvAdapter;
 pub use json::{JsonAdapter, PartitionedJsonAdapter};
 use std::marker::PhantomData;
+use std::path::Path;
 
 // TODO:
 // See: https://users.rust-lang.org/t/two-blanket-implementations-for-different-classes-of-objects/100173
@@ -87,4 +88,12 @@ pub trait PartitionedAdapter {
 
     // Is meant to be called by State, because State knows concrete type of M.
     fn load_relation<M: Model>(&self) -> Result<Relation<M>, JoydbError>;
+}
+
+/// This trait is used to create an adapter from a path.
+/// Most of the adapters are file system based, so this enables better ergonomics
+/// like opening a database with `Db::open("db.json")` instead of building the entire adapter
+/// and config manually.
+pub trait FromPath {
+    fn from_path<P: AsRef<Path>>(path: P) -> Self;
 }
