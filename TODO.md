@@ -8,6 +8,8 @@
 - [x] Put adapters behind features
 - [x] CSV adapter
 - [x] RON adapters
+- [ ] Add examples for all the adapters.
+- [ ] Add Justfile to run all the examples (as long as other tests and other checks)
 
 ### Flushing
 - [x] Spawn a separate thread on `open` to flush database with some interval
@@ -15,6 +17,7 @@
 
 
 ### CRUD methods:
+- [ ] Rename `find` to `get` ?
 - [ ] find_all_by(predicate) -> Vec<M>
 - [ ] find_by(predicate) -> Option<M>
 - [ ] delete_all_by(predicate) -> Vec<M>
@@ -36,7 +39,7 @@
 - [ ] Documentation in lib.rs
 - [ ] Documentation in README
 - [ ] Proper Cargo.toml: description, tags, keywords, etc.
-- [ ] Come with a logo (see ideas https://chatgpt.com/c/67eab5c4-682c-800c-ad29-7d144b337bb9)
+- [ ] Come with a logo
 
 ### Further ideas
 

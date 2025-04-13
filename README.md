@@ -1,4 +1,12 @@
-# Joydb
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/greyblake/joydb/master/art/rust_joydb_embedded_json_file_database.webp">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/greyblake/joydb/master/art/rust_joydb_embedded_json_file_database_inverted.webp">
+
+  <img width="300" alt="Rust Joydb Logo (Rust JSON embedded database)" src="https://raw.githubusercontent.com/greyblake/joydb/master/art/rust_joydb_embedded_json_file_database.webp">
+</picture>
+</p>
+<h2 align="center">JSON file database and ORM for quick prototyping.</h2>
 
 An in-memory embedded database with persistence and multiple adapters (JSON, CSV, etc).
 Acts like a minimalistic ORM with zero setup.

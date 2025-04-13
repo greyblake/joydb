@@ -21,15 +21,12 @@ use crate::{Model, Relation};
 use std::marker::PhantomData;
 use std::path::Path;
 
-// TODO:
-// See: https://users.rust-lang.org/t/two-blanket-implementations-for-different-classes-of-objects/100173
-// See example: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=db5ee78e4307b2ae4c1d113d0e39a6f2
-//
-// Introduce a main Adapter trait that can be implemented either through UnifiedAdapter or PartitionedAdapter.
-
 // ------- ABSTRACTIONS --------- //
 
 // TODO: Write a blog article about this workaround.
+// See: https://users.rust-lang.org/t/two-blanket-implementations-for-different-classes-of-objects/100173
+// See example: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=db5ee78e4307b2ae4c1d113d0e39a6f2
+
 pub trait Adapter: Send + 'static {
     type Target: BlanketAdapter<Target = Self>;
 
@@ -78,8 +75,11 @@ impl<PA: PartitionedAdapter> BlanketAdapter for Partitioned<PA> {
     }
 }
 
+/// The trait is used to define the adapters that use a single file to store the state.
 pub trait UnifiedAdapter {
-    // fn read_state<S: State>(&self) -> Result<S, JoydbError>;
+    /// Write the state to the file.
+    /// It's called every time when the database flushes a dirty state to the disk
+    /// with [`Joydb::flush`](crate::Joydb::flush) method.
     fn write_state<S: State>(&self, state: &S) -> Result<(), JoydbError>;
 
     /// Is called only once when the database is opened or created.
@@ -90,7 +90,7 @@ pub trait UnifiedAdapter {
 /// The idea behind this trait is to allow storing relations in separate files.
 ///
 /// For example, if you have a `User` model and a `Post` model, you can store
-/// `User` models in `users.json` and `Post` models in `posts.json`.
+/// `User` models in `User.json` and `Post` models in `Post.json`.
 ///
 /// But at the moment it's postponed.
 pub trait PartitionedAdapter {
