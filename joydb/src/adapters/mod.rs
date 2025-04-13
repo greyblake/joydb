@@ -14,7 +14,7 @@ pub use json::{JsonAdapter, JsonPartitionedAdapter};
 mod ron;
 
 #[cfg(feature = "ron")]
-pub use ron::{RonPartitionedAdapter, RonAdapter};
+pub use ron::{RonAdapter, RonPartitionedAdapter};
 
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
