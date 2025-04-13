@@ -8,7 +8,6 @@
 - [x] Put adapters behind features
 - [x] CSV adapter
 - [x] RON adapters
-- [ ] YAML adapters
 
 ### Flushing
 - [x] Spawn a separate thread on `open` to flush database with some interval

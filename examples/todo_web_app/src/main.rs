@@ -38,7 +38,7 @@ type Db = Joydb<DbState, JsonAdapter>;
 async fn main() {
     let config = JoydbConfig {
         mode: JoydbMode::Persistent {
-            adapter: JsonAdapter::new(DATA_PATH),
+            adapter: JsonAdapter::new(DATA_PATH, false),
             sync_policy: SyncPolicy::Periodic(Duration::from_secs(5)),
         },
     };

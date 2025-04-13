@@ -6,32 +6,32 @@ use crate::{Model, Relation};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-// TODO: add `pretty` boolean?
 pub struct JsonAdapter {
+    /// Path to the JSON file where the state is stored.
     file_path: PathBuf,
+
+    /// Whether to pretty-print the JSON output. By default is `true`.
+    pretty: bool,
 }
 
 impl FromPath for JsonAdapter {
     fn from_path<P: AsRef<Path>>(file_path: P) -> Self {
-        Self::new(file_path)
+        Self::new(file_path, true)
     }
 }
 
 impl JsonAdapter {
-    pub fn new<P: AsRef<Path>>(file_path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(file_path: P, pretty: bool) -> Self {
         Self {
             file_path: file_path.as_ref().to_path_buf(),
+            pretty,
         }
     }
 }
 
 impl UnifiedAdapter for JsonAdapter {
     fn write_state<S: State>(&self, state: &S) -> Result<(), JoydbError> {
-        let json =
-            serde_json::to_string_pretty(state).map_err(|e| JoydbError::Serialize(Box::new(e)))?;
-        let mut file = std::fs::File::create(&self.file_path)?;
-        file.write_all(json.as_bytes())?;
-        Ok(())
+        write_to_file(state, &self.file_path, self.pretty)
     }
 
     fn load_state<S: State>(&self) -> Result<S, JoydbError> {
@@ -41,12 +41,7 @@ impl UnifiedAdapter for JsonAdapter {
                 Err(JoydbError::NotFile(self.file_path.clone()))
             } else {
                 // Otherwise read the state from the existing file
-                let mut file = std::fs::File::open(&self.file_path)?;
-                let mut contents = String::new();
-                file.read_to_string(&mut contents)?;
-                let state = serde_json::from_str(&contents)
-                    .map_err(|e| JoydbError::Deserialize(Box::new(e)))?;
-                Ok(state)
+                read_from_file::<S>(&self.file_path)
             }
         } else {
             // If the file does not exist, create a new file with empty state
@@ -61,24 +56,29 @@ impl Adapter for JsonAdapter {
     type Target = Unified<Self>;
 }
 
-// TODO: add `pretty` boolean?
 pub struct PartitionedJsonAdapter {
+    /// Path to the directory where the partitioned JSON files are stored.
     dir_path: PathBuf,
+
+    /// Whether to pretty-print the JSON output. By default is `true`.
+    pretty: bool,
 }
 
 impl FromPath for PartitionedJsonAdapter {
     fn from_path<P: AsRef<Path>>(dir_path: P) -> Self {
-        Self::new(dir_path)
+        Self::new(dir_path, true)
     }
 }
 
 impl PartitionedJsonAdapter {
-    pub fn new<P: AsRef<Path>>(dir_path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(dir_path: P, pretty: bool) -> Self {
         Self {
             dir_path: dir_path.as_ref().to_path_buf(),
+            pretty,
         }
     }
 
+    /// Build the file path for the relation of a given model.
     fn relation_file_path<M: Model>(&self) -> PathBuf {
         self.dir_path.join(format!("{}.json", M::relation_name()))
     }
@@ -86,12 +86,7 @@ impl PartitionedJsonAdapter {
 
 impl PartitionedAdapter for PartitionedJsonAdapter {
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), JoydbError> {
-        let file_path = self.relation_file_path::<M>();
-        let json = serde_json::to_string_pretty(relation)
-            .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
-        let mut file = std::fs::File::create(&file_path)?;
-        file.write_all(json.as_bytes())?;
-        Ok(())
+        write_to_file(relation, &self.relation_file_path::<M>(), self.pretty)
     }
 
     fn load_relation<M: Model>(&self) -> Result<Relation<M>, JoydbError> {
@@ -101,14 +96,7 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
                 // If the path exists but is not a file, then return an error
                 Err(JoydbError::NotFile(file_path))
             } else {
-                // Otherwise read the relation from the existing file
-                let file_path = self.relation_file_path::<M>();
-                let mut file = std::fs::File::open(&file_path)?;
-                let mut contents = String::new();
-                file.read_to_string(&mut contents)?;
-                let relation = serde_json::from_str(&contents)
-                    .map_err(|e| JoydbError::Deserialize(Box::new(e)))?;
-                Ok(relation)
+                read_from_file::<Relation<M>>(&file_path)
             }
         } else {
             // If the file does not exist, create a new file with empty relation
@@ -134,4 +122,28 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
 
 impl Adapter for PartitionedJsonAdapter {
     type Target = Partitioned<Self>;
+}
+
+fn write_to_file<T: ::serde::Serialize>(
+    data: &T,
+    file_path: &PathBuf,
+    pretty: bool,
+) -> Result<(), JoydbError> {
+    let json_string = if pretty {
+        serde_json::to_string_pretty(data)
+    } else {
+        serde_json::to_string(data)
+    }
+    .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
+    let mut file = std::fs::File::create(file_path)?;
+    file.write_all(json_string.as_bytes())?;
+    Ok(())
+}
+
+fn read_from_file<T: ::serde::de::DeserializeOwned>(file_path: &PathBuf) -> Result<T, JoydbError> {
+    let mut file = std::fs::File::open(file_path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    let data = serde_json::from_str(&contents).map_err(|e| JoydbError::Deserialize(Box::new(e)))?;
+    Ok(data)
 }
