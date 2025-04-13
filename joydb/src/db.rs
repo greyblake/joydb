@@ -4,6 +4,7 @@ use crate::{
     JoydbError, Relation,
     state::{GetRelation, State},
 };
+use std::time::Duration;
 use std::fmt::Debug;
 use std::ops::Drop;
 use std::sync::{Arc, Mutex};
@@ -38,8 +39,15 @@ impl<S: State, A: Adapter> Clone for Joydb<S, A> {
 impl<S: State, A: Adapter> Joydb<S, A> {
     pub fn open(adapter: A, sync_mode: SyncMode) -> Result<Self, JoydbError> {
         let inner: InnerJoydb<S, A> = InnerJoydb::open(adapter, sync_mode)?;
+        let arc_inner = Arc::new(Mutex::new(inner));
+
+        if let SyncMode::Periodic(duration) = sync_mode {
+            let weak_inner_db = Arc::downgrade(&arc_inner);
+            spawn_periodic_sync_thread(duration, weak_inner_db);
+        }
+
         Ok(Self {
-            inner: Arc::new(Mutex::new(inner)),
+            inner: arc_inner,
         })
     }
 
@@ -261,15 +269,38 @@ pub enum SyncMode {
 
     /// The data are flushed to the file system periodically by a thread
     /// that runs in the background.
-    Periodic(std::time::Duration),
+    Periodic(Duration),
 
     /// The data are flushed to the file system manually when the [Joydb::flush] method is called.
     /// The only exception is on drop, which always flushes the data.
     Manual,
 
-    /// The data are never flushed to the file system. Even when [Joydb::flush] is explicitly
-    /// called.
-    /// With this mode, Joydb acts like in-memory-only database and this mode is mostly intended
-    /// for unit tests.
-    Never,
+    // /// The data are never flushed to the file system. Even when [Joydb::flush] is explicitly
+    // /// called.
+    // /// With this mode, Joydb acts like in-memory-only database and this mode is mostly intended
+    // /// for unit tests.
+    // TODO: This needs to be better thought out, because essentially it does not require adapter
+    // and file/dir path specified.
+    // Never,
+}
+
+
+/// The thread is running in the background until the database is dropped.
+fn spawn_periodic_sync_thread<S: State, A: Adapter>(
+    interval: Duration,
+    weak_inner_db: std::sync::Weak<Mutex<InnerJoydb<S, A>>>,
+) {
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(interval);
+            if let Some(inner) = weak_inner_db.upgrade() {
+             inner.lock()
+                 .expect("Failed to lock the Joydb database from the background thread")
+                 .flush()
+                 .expect("Failed to flush the Joydb database from the background thread");
+            } else {
+                break;
+            }
+        }
+    });
 }

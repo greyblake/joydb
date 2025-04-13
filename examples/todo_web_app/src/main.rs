@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::{
     Router,
     extract::{Form, Path, State},
@@ -12,7 +14,8 @@ use uuid::Uuid;
 #[tokio::main]
 async fn main() {
     let adapter = JsonAdapter::new(DB_PATH);
-    let db = Db::open(adapter, SyncMode::Instant).unwrap();
+    let mode = SyncMode::Periodic(Duration::from_secs(5));
+    let db = Db::open(adapter, mode).unwrap();
 
     // Create an Axum router with routes
     let app = Router::new()

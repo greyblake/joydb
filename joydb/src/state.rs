@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use crate::{JoydbError, Model, Relation, adapters::PartitionedAdapter};
 
-pub trait State: Default + Debug + Serialize + DeserializeOwned {
+pub trait State: Default + Debug + Serialize + DeserializeOwned + Send + 'static {
     fn is_dirty(&self) -> bool;
 
     fn reset_dirty(&mut self);

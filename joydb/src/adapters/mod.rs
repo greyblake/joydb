@@ -17,7 +17,7 @@ use std::marker::PhantomData;
 // ------- ABSTRACTIONS --------- //
 
 // TODO: Write a blog article about this workaround.
-pub trait Adapter {
+pub trait Adapter: Send + 'static {
     type Target: BlanketAdapter<Target = Self>;
 
     fn write_state<S: State>(&self, state: &S) -> Result<(), JoydbError> {
