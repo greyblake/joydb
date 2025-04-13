@@ -3,6 +3,7 @@
 An in-memory embedded database with persistence and multiple adapters (JSON, CSV, etc).
 Acts like a minimalistic ORM with zero setup.
 Simple, lightweight, and perfect for prototypes, small apps, or experiments.
+Not intended for serious production use, optimized for nothing but ergonomics.
 
 ## Get started
 
