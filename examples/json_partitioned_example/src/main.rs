@@ -23,8 +23,10 @@ type Db = Joydb<AppState, JsonPartitionedAdapter>;
 const DATA_DIR: &str = "data";
 
 fn main() {
-    // Delete the file if it exists
-    std::fs::remove_file(DATA_DIR).ok();
+    // Remove directory if it exists
+    if std::fs::remove_dir_all(DATA_DIR).is_ok() {
+        println!("Removed existing data directory");
+    }
 
     // Insert some data
     {

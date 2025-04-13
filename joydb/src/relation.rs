@@ -51,12 +51,12 @@ impl<M: Model> Relation<M> {
 
     pub(crate) fn insert(&mut self, record: &M) -> Result<(), JoydbError> {
         let id = record.id();
-        let is_duplicated = self.records.iter().find(|m| m.id() == id).is_some();
+        let is_duplicated = self.records.iter().any(|m| m.id() == id);
         if is_duplicated {
-            return Err(JoydbError::DuplicatedId {
+            Err(JoydbError::DuplicatedId {
                 id: format!("{:?}", id),
                 model_name: M::relation_name().to_owned(),
-            });
+            })
         } else {
             self.records.push(record.clone());
             self.meta.is_dirty = true;

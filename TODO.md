@@ -2,7 +2,7 @@
 - [x] Add description and keywords in Cargo.toml
 - [x] Publish 0.0.1 on crates.io
 - [x] Introduce a flushing strategy. Would would be a good name for that? SyncMode!?
-- [ ] Add Justfile to run all the examples (as long as other tests and other checks)
+- [x] Add Justfile to run all the examples (as long as other tests and other checks)
 
 ### Adapters
 

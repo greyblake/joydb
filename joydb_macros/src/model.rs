@@ -36,12 +36,7 @@ fn parse_model_struct(input: &DeriveInput) -> Result<Model, syn::Error> {
     let id_field = fields
         .named
         .iter()
-        .find(|field| {
-            field
-                .ident
-                .as_ref()
-                .map_or(false, |ident| ident.to_string() == ID_NAME)
-        })
+        .find(|field| field.ident.as_ref().is_some_and(|ident| ident == ID_NAME))
         .ok_or_else(|| syn::Error::new(input.ident.span(), "Model must have an `id` field"))?;
 
     Ok(Model {
