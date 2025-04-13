@@ -1,4 +1,3 @@
-
 - [x] Rename to `joydb`
 - [x] Add description and keywords in Cargo.toml
 - [x] Publish 0.0.1 on crates.io
@@ -6,12 +5,13 @@
 
 ### Adapters
 
+- [ ] Put adapters behind features
 - [x] CSV adapter
 - [ ] RON adapters
 - [ ] YAML adapters
 
 ### Flushing
-- [ ] Spawn a separate thread on `open` to flush database with some interval
+- [x] Spawn a separate thread on `open` to flush database with some interval
   -  The thread should own a weak ref (see `Arc::downgrade`)
 
 
@@ -44,32 +44,6 @@
 - [x] In memory only?
 - [x] Rework `define_state!` macro to avoid need to specify plural names.
 - [x] Reduce boilerplate in Db methods
-
-
-- Rename?
-    - (e.g. `playdb`, `loldb`, `jokedb`, `joydb`)
-    - `alkali` (non-ACID :D )
-    - `maydb`, `maybd`
-    - `worm`, `storm`
-    - `jorm` (Jörm - short from Jörmungandr) - also could be for "Json ORM".
-    - `quasidb` (Quasi DB)
-    - `shamdb` (Sham DB)
-    - `bogusdb` (Bogus)
-    - `notdb`, `keindb`
-    - `undb`,
-    - `fauxdb` - (Faux is French for "false" a short, catchy name that’s obviously not real.)
-    - `neverdb`
-    - `maldb` (like opposite from DB in Esperanto, or bad in Spanish)
-    - `nondb`
-    - `minidb`
-    - `pseudb` (Pseudo DB)
-    - `scratchdb`
-    - `pocdb` - (Proof of Concept DB)
-    - `pundb`
-    - `nulldb`
-    - `zerodb`
-    - `filedb`
-    - `sundb`
 
 
 ### Description

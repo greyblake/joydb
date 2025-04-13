@@ -4,7 +4,8 @@ resolver = "3"
 members = [
     "joydb",
     "joydb_macros",
+    "examples/csv_example",
     "examples/dummy",
     "examples/todo_web_app",
-    "test_suite", "examples/paritioned_db", "examples/csv_example",
+    "test_suite",
 ]

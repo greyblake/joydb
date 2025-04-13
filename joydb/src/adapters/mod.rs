@@ -1,11 +1,17 @@
-// TODO: Put behind feature flag
+#[cfg(feature = "csv")]
 mod csv;
+
+#[cfg(feature = "csv")]
+pub use csv::CsvAdapter;
+
+#[cfg(feature = "json")]
 mod json;
+
+#[cfg(feature = "json")]
+pub use json::{JsonAdapter, PartitionedJsonAdapter};
 
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
-pub use csv::CsvAdapter;
-pub use json::{JsonAdapter, PartitionedJsonAdapter};
 use std::marker::PhantomData;
 use std::path::Path;
 

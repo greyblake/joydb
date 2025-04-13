@@ -21,15 +21,14 @@ where
 }
 
 impl<M: Model> Relation<M> {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Relation {
             meta: RelationMeta::default(),
-            // TODO: Rename to records
             records: Vec::new(),
         }
     }
 
-    pub(crate) fn new_with_records(records: Vec<M>) -> Self {
+    pub fn new_with_records(records: Vec<M>) -> Self {
         Relation {
             meta: RelationMeta::default(),
             records,

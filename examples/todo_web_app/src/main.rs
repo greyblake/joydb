@@ -6,16 +6,14 @@ use axum::{
     response::{Html, IntoResponse},
     routing::{get, post},
 };
-use joydb::{
-    Joydb, JoydbConfig, JoydbMode, Model, SyncPolicy, adapters::JsonAdapter, define_state,
-};
+use joydb::{Joydb, JoydbConfig, JoydbMode, Model, SyncPolicy, adapters::JsonAdapter};
 use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // --- STORAGE ---
 
-const DB_PATH: &str = "db.json";
+const DATA_PATH: &str = "data.json";
 
 #[derive(Debug, Serialize, Deserialize, Clone, Model)]
 struct Todo {
@@ -29,7 +27,7 @@ struct NewTodo {
     name: String,
 }
 
-define_state!(
+joydb::define_state!(
     DbState,
     models: [Todo],
 );
@@ -40,7 +38,7 @@ type Db = Joydb<DbState, JsonAdapter>;
 async fn main() {
     let config = JoydbConfig {
         mode: JoydbMode::Persistent {
-            adapter: JsonAdapter::new(DB_PATH),
+            adapter: JsonAdapter::new(DATA_PATH),
             sync_policy: SyncPolicy::Periodic(Duration::from_secs(5)),
         },
     };

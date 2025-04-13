@@ -29,6 +29,7 @@ pub trait GetRelation<M: Model> {
     fn get_relation(&self) -> &Relation<M>;
 }
 
+// TODO: rename define_state -> state! ?
 #[macro_export]
 macro_rules! define_state {
     (
