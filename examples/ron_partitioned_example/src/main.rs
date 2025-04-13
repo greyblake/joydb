@@ -1,4 +1,4 @@
-use joydb::{Joydb, Model, adapters::PartitionedRonAdapter};
+use joydb::{Joydb, Model, adapters::RonPartitionedAdapter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
@@ -18,7 +18,7 @@ joydb::define_state! {
     models: [User, Post],
 }
 
-type Db = Joydb<AppState, PartitionedRonAdapter>;
+type Db = Joydb<AppState, RonPartitionedAdapter>;
 
 const DATA_PATH: &str = "./data";
 

@@ -64,18 +64,18 @@ impl Adapter for RonAdapter {
     type Target = Unified<Self>;
 }
 
-pub struct PartitionedRonAdapter {
+pub struct RonPartitionedAdapter {
     dir_path: PathBuf,
     pretty_config: Option<ron::ser::PrettyConfig>,
 }
 
-impl FromPath for PartitionedRonAdapter {
+impl FromPath for RonPartitionedAdapter {
     fn from_path<P: AsRef<Path>>(dir_path: P) -> Self {
         Self::new(dir_path, true)
     }
 }
 
-impl PartitionedRonAdapter {
+impl RonPartitionedAdapter {
     pub fn new<P: AsRef<Path>>(dir_path: P, pretty: bool) -> Self {
         let pretty_config = if pretty {
             Some(ron::ser::PrettyConfig::default())
@@ -93,7 +93,7 @@ impl PartitionedRonAdapter {
     }
 }
 
-impl PartitionedAdapter for PartitionedRonAdapter {
+impl PartitionedAdapter for RonPartitionedAdapter {
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), JoydbError> {
         write_to_file(
             relation,
@@ -134,7 +134,7 @@ impl PartitionedAdapter for PartitionedRonAdapter {
     }
 }
 
-impl Adapter for PartitionedRonAdapter {
+impl Adapter for RonPartitionedAdapter {
     type Target = Partitioned<Self>;
 }
 

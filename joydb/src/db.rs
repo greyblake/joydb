@@ -164,6 +164,13 @@ impl<S: State, A: Adapter> Joydb<S, A> {
     {
         self.inner.lock().unwrap().delete(id)
     }
+
+    /// Flushes the state to the file system.
+    /// If there are any unsaved changes the corresponding file(s) will be rewritten from scratch.
+    /// This method is also always called automatically on drop.
+    pub fn flush(&self) -> Result<(), JoydbError> {
+        self.inner.lock().unwrap().flush()
+    }
 }
 
 #[derive(Debug)]

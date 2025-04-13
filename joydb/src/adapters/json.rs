@@ -56,7 +56,7 @@ impl Adapter for JsonAdapter {
     type Target = Unified<Self>;
 }
 
-pub struct PartitionedJsonAdapter {
+pub struct JsonPartitionedAdapter {
     /// Path to the directory where the partitioned JSON files are stored.
     dir_path: PathBuf,
 
@@ -64,13 +64,13 @@ pub struct PartitionedJsonAdapter {
     pretty: bool,
 }
 
-impl FromPath for PartitionedJsonAdapter {
+impl FromPath for JsonPartitionedAdapter {
     fn from_path<P: AsRef<Path>>(dir_path: P) -> Self {
         Self::new(dir_path, true)
     }
 }
 
-impl PartitionedJsonAdapter {
+impl JsonPartitionedAdapter {
     pub fn new<P: AsRef<Path>>(dir_path: P, pretty: bool) -> Self {
         Self {
             dir_path: dir_path.as_ref().to_path_buf(),
@@ -84,7 +84,7 @@ impl PartitionedJsonAdapter {
     }
 }
 
-impl PartitionedAdapter for PartitionedJsonAdapter {
+impl PartitionedAdapter for JsonPartitionedAdapter {
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), JoydbError> {
         write_to_file(relation, &self.relation_file_path::<M>(), self.pretty)
     }
@@ -120,7 +120,7 @@ impl PartitionedAdapter for PartitionedJsonAdapter {
     }
 }
 
-impl Adapter for PartitionedJsonAdapter {
+impl Adapter for JsonPartitionedAdapter {
     type Target = Partitioned<Self>;
 }
 

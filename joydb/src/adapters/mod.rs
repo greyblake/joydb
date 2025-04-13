@@ -8,13 +8,13 @@ pub use csv::CsvAdapter;
 mod json;
 
 #[cfg(feature = "json")]
-pub use json::{JsonAdapter, PartitionedJsonAdapter};
+pub use json::{JsonAdapter, JsonPartitionedAdapter};
 
 #[cfg(feature = "ron")]
 mod ron;
 
 #[cfg(feature = "ron")]
-pub use ron::{PartitionedRonAdapter, RonAdapter};
+pub use ron::{RonPartitionedAdapter, RonAdapter};
 
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
