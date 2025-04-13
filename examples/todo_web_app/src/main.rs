@@ -6,16 +6,22 @@ use axum::{
     response::{Html, IntoResponse},
     routing::{get, post},
 };
-use joydb::{Joydb, Model, SyncMode, adapters::JsonAdapter, define_state};
+use joydb::{
+    Joydb, JoydbConfig, JoydbMode, Model, SyncPolicy, adapters::JsonAdapter, define_state,
+};
 use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
-    let adapter = JsonAdapter::new(DB_PATH);
-    let mode = SyncMode::Periodic(Duration::from_secs(5));
-    let db = Db::open(adapter, mode).unwrap();
+    let config = JoydbConfig {
+        mode: JoydbMode::Persistent {
+            adapter: JsonAdapter::new(DB_PATH),
+            sync_policy: SyncPolicy::Periodic(Duration::from_secs(5)),
+        },
+    };
+    let db = Db::open(config).unwrap();
 
     // Create an Axum router with routes
     let app = Router::new()

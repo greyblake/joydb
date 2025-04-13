@@ -41,7 +41,7 @@
 
 ### Further ideas
 
-- [ ] In memory only?
+- [x] In memory only?
 - [x] Rework `define_state!` macro to avoid need to specify plural names.
 - [x] Reduce boilerplate in Db methods
 

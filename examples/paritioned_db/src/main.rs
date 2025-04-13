@@ -1,4 +1,4 @@
-use joydb::{Joydb, Model, SyncMode, adapters::PartitionedJsonAdapter};
+use joydb::{Joydb, JoydbConfig, JoydbMode, Model, SyncPolicy, adapters::PartitionedJsonAdapter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
@@ -24,7 +24,13 @@ const DB_DIR: &str = "db_data";
 
 fn main() {
     let adapter = PartitionedJsonAdapter::new(DB_DIR);
-    let db = Db::open(adapter, SyncMode::Instant).unwrap();
+    let config = JoydbConfig {
+        mode: JoydbMode::Persistent {
+            adapter,
+            sync_policy: SyncPolicy::Manual,
+        },
+    };
+    let db = Db::open(config).unwrap();
 
     db.insert(&User {
         id: 1,

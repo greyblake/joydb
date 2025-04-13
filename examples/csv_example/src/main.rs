@@ -1,4 +1,4 @@
-use joydb::{Joydb, Model, SyncMode, adapters::CsvAdapter};
+use joydb::{Joydb, JoydbConfig, JoydbMode, Model, SyncPolicy, adapters::CsvAdapter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
@@ -30,8 +30,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Write something
     {
+        // TODO: Simplify the example, use Db::open(path)
         let adapter = CsvAdapter::new(DB_DIR);
-        let db = Db::open(adapter, SyncMode::Instant)?;
+        let config = JoydbConfig {
+            mode: JoydbMode::Persistent {
+                adapter,
+                sync_policy: SyncPolicy::Instant,
+            },
+        };
+        let db = Db::open(config)?;
 
         db.insert(&User {
             id: 1,
@@ -53,8 +60,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Read something
     {
+        // TODO: Simplify the example, use Db::open(path)
         let adapter = CsvAdapter::new(DB_DIR);
-        let db = Db::open(adapter, SyncMode::Instant)?;
+        let config = JoydbConfig {
+            mode: JoydbMode::Persistent {
+                adapter,
+                sync_policy: SyncPolicy::Instant,
+            },
+        };
+        let db = Db::open(config)?;
 
         let alice = db.find::<User>(&1)?.unwrap();
         assert_eq!(alice.name, "Alice");

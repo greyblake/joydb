@@ -1,6 +1,6 @@
 use crate::database::Database;
-use joydb::SyncMode;
 use joydb::adapters::JsonAdapter;
+use joydb::{JoydbConfig, JoydbMode, SyncPolicy};
 use uuid::Uuid;
 
 /// Generate a unique file path for the database file.
@@ -17,7 +17,13 @@ where
 {
     let file_path = gen_db_file_path();
     let adapter = JsonAdapter::new(&file_path);
-    let db = Database::open(adapter, SyncMode::Instant).unwrap();
+    let config = JoydbConfig {
+        mode: JoydbMode::Persistent {
+            adapter,
+            sync_policy: SyncPolicy::Instant,
+        },
+    };
+    let db = Database::open(config).unwrap();
     f(db);
     std::fs::remove_file(file_path).unwrap();
 }

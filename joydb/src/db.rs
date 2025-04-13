@@ -4,10 +4,10 @@ use crate::{
     JoydbError, Relation,
     state::{GetRelation, State},
 };
-use std::time::Duration;
 use std::fmt::Debug;
 use std::ops::Drop;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 /// A struct that represents a database.
 /// It's thread-safe and can be shared between multiple threads.
@@ -37,18 +37,18 @@ impl<S: State, A: Adapter> Clone for Joydb<S, A> {
 }
 
 impl<S: State, A: Adapter> Joydb<S, A> {
-    pub fn open(adapter: A, sync_mode: SyncMode) -> Result<Self, JoydbError> {
-        let inner: InnerJoydb<S, A> = InnerJoydb::open(adapter, sync_mode)?;
+    pub fn open(config: JoydbConfig<A>) -> Result<Self, JoydbError> {
+        let maybe_sync_policy = config.sync_policy();
+
+        let inner: InnerJoydb<S, A> = InnerJoydb::open(config)?;
         let arc_inner = Arc::new(Mutex::new(inner));
 
-        if let SyncMode::Periodic(duration) = sync_mode {
+        if let Some(SyncPolicy::Periodic(duration)) = maybe_sync_policy {
             let weak_inner_db = Arc::downgrade(&arc_inner);
             spawn_periodic_sync_thread(duration, weak_inner_db);
         }
 
-        Ok(Self {
-            inner: arc_inner,
-        })
+        Ok(Self { inner: arc_inner })
     }
 
     /// Inserts a new record.
@@ -139,31 +139,45 @@ impl<S: State, A: Adapter> Joydb<S, A> {
 #[derive(Debug)]
 struct InnerJoydb<S: State, A: Adapter> {
     state: S,
-    adapter: A,
-    sync_mode: SyncMode,
+    mode: JoydbMode<A>,
 }
 
 impl<S: State, A: Adapter> InnerJoydb<S, A> {
-    fn open(adapter: A, sync_mode: SyncMode) -> Result<Self, JoydbError> {
-        let state = adapter.load_state::<S>()?;
-        Ok(Self {
-            state,
-            adapter,
-            sync_mode,
-        })
+    fn open(config: JoydbConfig<A>) -> Result<Self, JoydbError> {
+        let JoydbConfig { mode } = config;
+
+        // Get the initial state
+        let state = match &mode {
+            JoydbMode::Persistent {
+                adapter,
+                sync_policy: _,
+            } => adapter.load_state::<S>()?,
+            JoydbMode::InMemory => S::default(),
+        };
+
+        Ok(Self { state, mode })
     }
 
     /// Write data to the file system if there are unsaved changes.
     fn flush(&mut self) -> Result<(), JoydbError> {
         if self.is_dirty() {
-            self.save()?;
+            self.write_state()?;
             self.state.reset_dirty();
         }
         Ok(())
     }
 
-    fn save(&mut self) -> Result<(), JoydbError> {
-        self.adapter.write_state(&self.state)
+    fn write_state(&mut self) -> Result<(), JoydbError> {
+        match &self.mode {
+            JoydbMode::Persistent {
+                adapter,
+                sync_policy: _,
+            } => adapter.write_state(&self.state),
+            JoydbMode::InMemory => {
+                // Do nothing
+                Ok(())
+            }
+        }
     }
 
     fn is_dirty(&self) -> bool {
@@ -242,9 +256,9 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         Ok(maybe_deleted_record)
     }
 
-    /// Hook which  is called every time after database state has changed.
+    /// Hook which is called every time after database state has changed.
     fn after_change(&mut self) -> Result<(), JoydbError> {
-        if self.sync_mode == SyncMode::Instant {
+        if self.mode.is_instant_sync_policy() {
             self.flush()?;
         }
         Ok(())
@@ -261,7 +275,7 @@ impl<S: State, A: Adapter> Drop for InnerJoydb<S, A> {
 
 /// Specifies how and when the database should be synchronized with the file system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum SyncMode {
+pub enum SyncPolicy {
     /// The data are flushed to the file system instantly with every mutable operation.
     /// This is the default mode.
     /// This mode is the slowest, but the safest.
@@ -274,18 +288,46 @@ pub enum SyncMode {
     /// The data are flushed to the file system manually when the [Joydb::flush] method is called.
     /// The only exception is on drop, which always flushes the data.
     Manual,
-
-    // /// The data are never flushed to the file system. Even when [Joydb::flush] is explicitly
-    // /// called.
-    // /// With this mode, Joydb acts like in-memory-only database and this mode is mostly intended
-    // /// for unit tests.
-    // TODO: This needs to be better thought out, because essentially it does not require adapter
-    // and file/dir path specified.
-    // Never,
 }
 
+#[derive(Debug)]
+pub struct JoydbConfig<A: Adapter> {
+    pub mode: JoydbMode<A>,
+}
 
-/// The thread is running in the background until the database is dropped.
+impl<A: Adapter> JoydbConfig<A> {
+    fn sync_policy(&self) -> Option<SyncPolicy> {
+        match &self.mode {
+            JoydbMode::Persistent { sync_policy, .. } => Some(*sync_policy),
+            JoydbMode::InMemory => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum JoydbMode<A: Adapter> {
+    Persistent {
+        adapter: A,
+        sync_policy: SyncPolicy,
+    },
+    /// The data are never flushed to the file system. Even when [Joydb::flush] is explicitly
+    /// called.
+    /// With this mode, Joydb acts like in-memory-only database and this mode is mostly intended
+    /// for unit tests.
+    InMemory,
+}
+
+impl<A: Adapter> JoydbMode<A> {
+    fn is_instant_sync_policy(&self) -> bool {
+        match self {
+            JoydbMode::Persistent { sync_policy, .. } => *sync_policy == SyncPolicy::Instant,
+            JoydbMode::InMemory => false,
+        }
+    }
+}
+
+/// Spawns a thread that periodically flushes the database.
+/// The thread owns a weak reference to the database, and runs until the database is dropped.
 fn spawn_periodic_sync_thread<S: State, A: Adapter>(
     interval: Duration,
     weak_inner_db: std::sync::Weak<Mutex<InnerJoydb<S, A>>>,
@@ -294,10 +336,11 @@ fn spawn_periodic_sync_thread<S: State, A: Adapter>(
         loop {
             std::thread::sleep(interval);
             if let Some(inner) = weak_inner_db.upgrade() {
-             inner.lock()
-                 .expect("Failed to lock the Joydb database from the background thread")
-                 .flush()
-                 .expect("Failed to flush the Joydb database from the background thread");
+                inner
+                    .lock()
+                    .expect("Failed to lock the Joydb database from the background thread")
+                    .flush()
+                    .expect("Failed to flush the Joydb database from the background thread");
             } else {
                 break;
             }
