@@ -38,6 +38,11 @@ impl<S: State, A: Adapter> Clone for Joydb<S, A> {
 }
 
 impl<S: State, A: Adapter + FromPath> Joydb<S, A> {
+    /// Opens a database from the given file/directory path.
+    /// If the database does not exist, it will be created.
+    ///
+    /// # Example
+    /// TODO example
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, JoydbError> {
         let adapter = A::from_path(path);
         let config = JoydbConfig {
@@ -51,6 +56,16 @@ impl<S: State, A: Adapter + FromPath> Joydb<S, A> {
 }
 
 impl<S: State, A: Adapter> Joydb<S, A> {
+    /// Creates a new in-memory database.
+    /// This database is not persisted to the file system.
+    /// This is intended to be used mostly in tests.
+    pub fn new_in_memory() -> Result<Self, JoydbError> {
+        let config = JoydbConfig {
+            mode: JoydbMode::InMemory,
+        };
+        Self::open_with_config(config)
+    }
+
     pub fn open_with_config(config: JoydbConfig<A>) -> Result<Self, JoydbError> {
         let maybe_sync_policy = config.sync_policy();
 
