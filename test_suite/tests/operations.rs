@@ -24,7 +24,7 @@ fn should_insert_and_find() {
         assert_eq!(db.count::<User>().unwrap(), 2);
         assert_eq!(db.count::<Post>().unwrap(), 0);
 
-        let alice = db.find::<User>(&alice_id).unwrap().unwrap();
+        let alice = db.get::<User>(&alice_id).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
     });
 }
@@ -55,7 +55,7 @@ fn should_return_error_on_attempt_to_insert_record_with_duplicated_id() {
         // Make sure we did not add any new records
         assert_eq!(db.count::<User>().unwrap(), 1);
 
-        let same_alice = db.find::<User>(&alice_id).unwrap().unwrap();
+        let same_alice = db.get::<User>(&alice_id).unwrap().unwrap();
         assert_eq!(same_alice.name, "Alice");
     });
 }
@@ -70,7 +70,7 @@ fn should_update() {
         let alice_id = alice.id;
         db.insert(&alice).unwrap();
 
-        let alice = db.find::<User>(&alice_id).unwrap().unwrap();
+        let alice = db.get::<User>(&alice_id).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 
         let alice = User {
@@ -79,7 +79,7 @@ fn should_update() {
         };
         db.update(alice).unwrap();
 
-        let alice = db.find::<User>(&alice_id).unwrap().unwrap();
+        let alice = db.get::<User>(&alice_id).unwrap().unwrap();
         assert_eq!(alice.name, "Alice Updated");
     });
 }

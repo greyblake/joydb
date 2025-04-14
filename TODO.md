@@ -17,11 +17,14 @@
 
 
 ### CRUD methods:
-- [ ] Rename `find` to `get` ?
-- [ ] find_all_by(predicate) -> Vec<M>
-- [ ] find_by(predicate) -> Option<M>
+- [ ] Rename `find` to `get`
+- [ ] Rename `all` -> `get_all`
+- [ ] Implement `get_all_by()`
 - [ ] delete_all_by(predicate) -> Vec<M>
-- [ ] upsert
+- [ ] upsert(&M)
+
+
+let adult_users: Vec<User> = db.xxx::<User>(|user| user.age >= 18)?;
 
 
 ### Improvements

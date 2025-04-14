@@ -64,8 +64,7 @@ impl<M: Model> Relation<M> {
         }
     }
 
-    // TODO: Shell it be renamed to `get()` ?
-    pub(crate) fn find(&self, id: &M::Id) -> Result<Option<M>, JoydbError> {
+    pub(crate) fn get(&self, id: &M::Id) -> Result<Option<M>, JoydbError> {
         let maybe_record = self.records.iter().find(|m| m.id() == id).cloned();
         Ok(maybe_record)
     }
@@ -275,14 +274,14 @@ mod tests {
         }
     }
 
-    mod find {
+    mod get {
         use super::*;
 
         #[test]
         fn should_return_none_when_record_not_found() {
             let relation = sample_relation();
             let id = 999;
-            let maybe_post = relation.find(&id).unwrap();
+            let maybe_post = relation.get(&id).unwrap();
             assert!(maybe_post.is_none());
         }
 
@@ -290,7 +289,7 @@ mod tests {
         fn should_return_record_when_found() {
             let relation = sample_relation();
             let id = 2;
-            let maybe_post = relation.find(&id).unwrap();
+            let maybe_post = relation.get(&id).unwrap();
             let post = maybe_post.unwrap();
             assert_eq!(post, second_post());
         }
@@ -330,7 +329,7 @@ mod tests {
             };
             relation.update(new_post.clone()).unwrap();
 
-            let updated_post = relation.find(&2).unwrap().unwrap();
+            let updated_post = relation.get(&2).unwrap().unwrap();
             assert_eq!(updated_post, new_post);
             assert_eq!(relation.meta.is_dirty, true);
         }

@@ -54,7 +54,7 @@ fn main() {
     // Load the data back
     {
         let db = Db::open(DATA_DIR).unwrap();
-        let alice: User = db.find(&1).unwrap().unwrap();
+        let alice: User = db.get(&1).unwrap().unwrap();
         assert_eq!(alice.name, "Alice");
 
         db.delete::<Post>(&2).unwrap();

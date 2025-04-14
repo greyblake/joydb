@@ -54,13 +54,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let db = Db::open(DB_DIR)?;
 
-        let alice = db.find::<User>(&1)?.unwrap();
+        let alice = db.get::<User>(&1)?.unwrap();
         assert_eq!(alice.name, "Alice");
 
-        let bob = db.find::<User>(&2)?.unwrap();
+        let bob = db.get::<User>(&2)?.unwrap();
         assert_eq!(bob.name, "Bob");
 
-        let post = db.find::<Post>(&1)?.unwrap();
+        let post = db.get::<Post>(&1)?.unwrap();
         assert_eq!(post.title, "Hello, world!");
     }
 

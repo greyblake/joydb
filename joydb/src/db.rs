@@ -107,12 +107,11 @@ impl<S: State, A: Adapter> Joydb<S, A> {
     /// # Example
     ///
     /// TODO
-    // TODO: Rename To `get()` ?
-    pub fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
+    pub fn get<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
     where
         S: GetRelation<M>,
     {
-        self.inner.lock().unwrap().find(id)
+        self.inner.lock().unwrap().get(id)
     }
 
     /// Returns all records that corresponds to the model type.
@@ -247,12 +246,12 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         Ok(())
     }
 
-    fn find<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
+    fn get<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
     where
         S: GetRelation<M>,
     {
         let relation = self.get_relation::<M>();
-        relation.find(id)
+        relation.get(id)
     }
 
     fn all<M: Model>(&self) -> Result<Vec<M>, JoydbError>
