@@ -10,8 +10,7 @@
 - [x] CSV adapter
 - [x] RON adapters
 - [x] Add examples for all the adapters.
-- [ ] Refactor adapters, to extract common parts that interact with the file system.
-- [ ] Adjust adapters to write to a tmp file, than replace the original file. (Write-Rename pattern)
+- [x] Adjust adapters to write to a tmp file, than replace the original file. (Write-Rename pattern)
 
 ### Flushing
 - [x] Spawn a separate thread on `open` to flush database with some interval. The thread should own a weak ref (see `Arc::downgrade`)

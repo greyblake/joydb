@@ -21,6 +21,8 @@ use crate::{Model, Relation};
 use std::marker::PhantomData;
 use std::path::Path;
 
+mod fs_utils;
+
 // ------- ABSTRACTIONS --------- //
 
 // TODO: Write a blog article about this workaround.

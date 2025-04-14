@@ -1,9 +1,10 @@
 use crate::adapters::{Adapter, Partitioned, PartitionedAdapter};
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
+use csv::Writer;
 use std::path::{Path, PathBuf};
 
-use super::FromPath;
+use super::{FromPath, fs_utils};
 
 pub struct CsvAdapter {
     dir_path: PathBuf,
@@ -87,17 +88,19 @@ fn write_relation_to_csv_file<M: Model>(
     relation: &Relation<M>,
     file_path: &PathBuf,
 ) -> Result<(), JoydbError> {
-    let mut writer =
-        csv::Writer::from_path(file_path).map_err(|e| JoydbError::Serialize(Box::new(e)))?;
+    let mut buffer = Vec::new();
+    {
+        let mut writer = Writer::from_writer(&mut buffer);
+        for model in relation.records() {
+            writer
+                .serialize(model)
+                .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
+        }
 
-    for model in relation.records() {
-        writer
-            .serialize(model)
-            .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
+        writer.flush()?
     }
 
-    writer
-        .flush()
-        .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
+    fs_utils::safe_write(file_path, &buffer)?;
+
     Ok(())
 }

@@ -3,8 +3,10 @@ use crate::adapters::{
 };
 use crate::{JoydbError, state::State};
 use crate::{Model, Relation};
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::{Path, PathBuf};
+
+use super::fs_utils;
 
 pub struct RonAdapter {
     file_path: PathBuf,
@@ -150,16 +152,13 @@ fn write_to_file<T: ::serde::Serialize>(
     }
     .map_err(|e| JoydbError::Serialize(Box::new(e)))?;
 
-    let mut file = std::fs::File::create(file_path)?;
-    file.write_all(ron_string.as_bytes())?;
+    fs_utils::safe_write(file_path, ron_string.as_bytes())?;
 
     Ok(())
 }
 
 fn read_from_file<T: ::serde::de::DeserializeOwned>(file_path: &PathBuf) -> Result<T, JoydbError> {
-    let mut file = std::fs::File::open(file_path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let data = ron::de::from_str(&contents).map_err(|e| JoydbError::Deserialize(Box::new(e)))?;
+    let content = fs_utils::read_file(file_path)?;
+    let data = ron::de::from_str(&content).map_err(|e| JoydbError::Deserialize(Box::new(e)))?;
     Ok(data)
 }
