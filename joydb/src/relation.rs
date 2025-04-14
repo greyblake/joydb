@@ -69,7 +69,7 @@ impl<M: Model> Relation<M> {
         Ok(maybe_record)
     }
 
-    pub(crate) fn all(&self) -> Result<Vec<M>, JoydbError> {
+    pub(crate) fn get_all(&self) -> Result<Vec<M>, JoydbError> {
         Ok(self.records.to_vec())
     }
 
@@ -295,13 +295,13 @@ mod tests {
         }
     }
 
-    mod all {
+    mod get_all {
         use super::*;
 
         #[test]
         fn should_return_all_records() {
             let relation = sample_relation();
-            let all_posts = relation.all().unwrap();
+            let all_posts = relation.get_all().unwrap();
             assert_eq!(all_posts, sample_posts());
         }
     }

@@ -71,7 +71,7 @@ async fn main() {
 
 // Handler for the index page
 async fn index(State(db): State<Db>) -> impl IntoResponse {
-    let todos = db.all::<Todo>().unwrap();
+    let todos = db.get_all::<Todo>().unwrap();
 
     let pending_todos: Vec<_> = todos.iter().filter(|t| !t.completed).cloned().collect();
     let completed_todos: Vec<_> = todos.iter().filter(|t| t.completed).cloned().collect();

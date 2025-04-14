@@ -15,12 +15,12 @@ use std::time::Duration;
 ///
 /// # CRUD operations
 ///
-/// | Operation | Methods                                                          |
-/// |-----------|------------------------------------------------------------------|
-/// | Create    | [`insert`](Self::insert)                                         |
-/// | Read      | [`find`](Self::find), [`all`](Self::all), [`count`](Self::count) |
-/// | Update    | [`update`](Self::update)                                         |
-/// | Delete    | [`delete`](Self::delete)                                         |
+/// | Operation | Methods                                                                |
+/// |-----------|------------------------------------------------------------------------|
+/// | Create    | [`insert`](Self::insert)                                               |
+/// | Read      | [`get`](Self::get), [`get_all`](Self::get_all), [`count`](Self::count) |
+/// | Update    | [`update`](Self::update)                                               |
+/// | Delete    | [`delete`](Self::delete)                                               |
 ///
 #[derive(Debug)]
 pub struct Joydb<S: State, A: Adapter> {
@@ -122,11 +122,11 @@ impl<S: State, A: Adapter> Joydb<S, A> {
     ///
     /// # Example
     /// TODO
-    pub fn all<M: Model>(&self) -> Result<Vec<M>, JoydbError>
+    pub fn get_all<M: Model>(&self) -> Result<Vec<M>, JoydbError>
     where
         S: GetRelation<M>,
     {
-        self.inner.lock().unwrap().all()
+        self.inner.lock().unwrap().get_all()
     }
 
     /// Returns the number of records that corresponds to the model type.
@@ -254,12 +254,12 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         relation.get(id)
     }
 
-    fn all<M: Model>(&self) -> Result<Vec<M>, JoydbError>
+    fn get_all<M: Model>(&self) -> Result<Vec<M>, JoydbError>
     where
         S: GetRelation<M>,
     {
         let relation = self.get_relation::<M>();
-        relation.all()
+        relation.get_all()
     }
 
     pub fn count<M: Model>(&self) -> Result<usize, JoydbError>
