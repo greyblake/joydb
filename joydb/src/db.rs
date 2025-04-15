@@ -15,12 +15,12 @@ use std::time::Duration;
 ///
 /// # CRUD operations
 ///
-/// | Operation | Methods                                                                                                 |
-/// |-----------|---------------------------------------------------------------------------------------------------------|
-/// | Create    | [`insert`](Self::insert)                                                                                |
-/// | Read      | [`get`](Self::get), [`get_all`](Self::get_all), [`get_all_by`](Self::get_all_by) [`count`](Self::count) |
-/// | Update    | [`update`](Self::update)                                                                                |
-/// | Delete    | [`delete`](Self::delete)                                                                                |
+/// | Operation | Methods                                                                                                  |
+/// |-----------|----------------------------------------------------------------------------------------------------------|
+/// | Create    | [`insert`](Self::insert)                                                                                 |
+/// | Read      | [`get`](Self::get), [`get_all`](Self::get_all), [`get_all_by`](Self::get_all_by), [`count`](Self::count) |
+/// | Update    | [`update`](Self::update)                                                                                 |
+/// | Delete    | [`delete`](Self::delete), [`delete_all_by`](Self::delete_all_by)                                         |
 ///
 #[derive(Debug)]
 pub struct Joydb<S: State, A: Adapter> {
@@ -174,6 +174,16 @@ impl<S: State, A: Adapter> Joydb<S, A> {
         self.inner.lock().unwrap().delete(id)
     }
 
+    /// Deletes all records that match the predicate.
+    pub fn delete_all_by<M, F>(&self, predicate: F) -> Result<Vec<M>, JoydbError>
+    where
+        M: Model,
+        S: GetRelation<M>,
+        F: Fn(&M) -> bool,
+    {
+        self.inner.lock().unwrap().delete_all_by(predicate)
+    }
+
     /// Flushes the state to the file system.
     /// If there are any unsaved changes the corresponding file(s) will be rewritten from scratch.
     /// This method is also always called automatically on drop.
@@ -311,6 +321,20 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
             self.after_change()?;
         }
         Ok(maybe_deleted_record)
+    }
+
+    pub fn delete_all_by<M, F>(&mut self, predicate: F) -> Result<Vec<M>, JoydbError>
+    where
+        M: Model,
+        S: GetRelation<M>,
+        F: Fn(&M) -> bool,
+    {
+        let relation = self.get_relation_mut::<M>();
+        let deleted_records = relation.delete_all_by(predicate)?;
+        if !deleted_records.is_empty() {
+            self.after_change()?;
+        }
+        Ok(deleted_records)
     }
 
     /// Hook which is called every time after database state has changed.

@@ -24,9 +24,6 @@
 - [ ] upsert(&M)
 
 
-let adult_users: Vec<User> = db.xxx::<User>(|user| user.age >= 18)?;
-
-
 ### Improvements
 - [ ] Finalize naming of the methods
 - [x] Rename `GetRelation` to something else? (NO, leave it as it is)

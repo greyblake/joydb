@@ -145,3 +145,31 @@ fn should_get_all_records_that_match_given_predicate() {
         assert!(adult_names.contains(&"Bob".to_string()));
     });
 }
+
+#[test]
+fn should_delete_all_records_that_match_predicate() {
+    with_open_db(|db| {
+        let alice = User {
+            id: Uuid::new_v4(),
+            name: "Alice".to_string(),
+            age: 30,
+        };
+        db.insert(&alice).unwrap();
+
+        let bob = User {
+            id: Uuid::new_v4(),
+            name: "Bob".to_string(),
+            age: 25,
+        };
+        db.insert(&bob).unwrap();
+
+
+        let deleted_users = db.delete_all_by(|u: &User| u.age > 27).unwrap();
+        assert_eq!(deleted_users.len(), 1);
+        assert_eq!(deleted_users[0].name, "Alice");
+
+        let remaining_users: Vec<User> = db.get_all().unwrap();
+        assert_eq!(remaining_users.len(), 1);
+        assert_eq!(remaining_users[0].name, "Bob");
+    });
+}

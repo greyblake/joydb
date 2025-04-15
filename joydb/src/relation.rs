@@ -116,6 +116,26 @@ impl<M: Model> Relation<M> {
             Ok(None)
         }
     }
+
+    pub(crate) fn delete_all_by<F>(&mut self, predicate: F) -> Result<Vec<M>, JoydbError>
+    where
+        F: Fn(&M) -> bool,
+    {
+        let mut deleted_records = Vec::new();
+        let mut retained_records = Vec::with_capacity(self.records.len());
+
+        for record in self.records.drain(..) {
+            if predicate(&record) {
+                deleted_records.push(record);
+                self.meta.is_dirty = true;
+            } else {
+                retained_records.push(record);
+            }
+        }
+        self.records = retained_records;
+
+        Ok(deleted_records)
+    }
 }
 
 /// Metadata for the relation.
@@ -390,6 +410,39 @@ mod tests {
             let id = 555;
             let maybe_post = relation.delete(&id).unwrap();
             assert!(maybe_post.is_none());
+            assert_eq!(relation.records.len(), 3);
+            assert_eq!(relation.meta.is_dirty, false);
+        }
+    }
+
+    mod delete_all_by {
+        use super::*;
+
+        #[test]
+        fn should_delete_all_records_that_match_predicate() {
+            let mut relation = sample_relation();
+            assert_eq!(relation.records.len(), 3);
+
+            let deleted_records = relation.delete_all_by(|post: &Post| post.id >= 2).unwrap();
+
+            assert_eq!(deleted_records.len(), 2);
+            assert!(deleted_records.contains(&second_post()));
+            assert!(deleted_records.contains(&third_post()));
+
+            assert_eq!(relation.records.len(), 1);
+            assert_eq!(relation.records[0], first_post());
+            assert_eq!(relation.meta.is_dirty, true);
+        }
+
+        #[test]
+        fn should_not_delete_anything_if_no_record_matches_predicate() {
+            let mut relation = sample_relation();
+            assert_eq!(relation.records.len(), 3);
+
+            let deleted_records = relation.delete_all_by(|post: &Post| post.id > 777).unwrap();
+
+            assert_eq!(deleted_records.len(), 0);
+
             assert_eq!(relation.records.len(), 3);
             assert_eq!(relation.meta.is_dirty, false);
         }
