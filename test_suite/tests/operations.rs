@@ -138,7 +138,7 @@ fn should_get_all_records_that_match_given_predicate() {
         assert_eq!(kids.len(), 1);
         assert_eq!(kids[0].name, "Charlie");
 
-        let adults : Vec<User> = db.get_all_by(|u: &User| u.age >= 18).unwrap();
+        let adults: Vec<User> = db.get_all_by(|u: &User| u.age >= 18).unwrap();
         let adult_names: Vec<String> = adults.iter().map(|u| u.name.clone()).collect();
         assert_eq!(adult_names.len(), 2);
         assert!(adult_names.contains(&"Alice".to_string()));
