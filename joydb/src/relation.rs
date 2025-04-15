@@ -73,6 +73,20 @@ impl<M: Model> Relation<M> {
         Ok(self.records.to_vec())
     }
 
+    /// Return all records that match the predicate.
+    pub(crate) fn get_all_by<F>(&self, predicate: F) -> Result<Vec<M>, JoydbError>
+    where
+        F: Fn(&M) -> bool,
+    {
+        let filtered_records = self
+            .records
+            .iter()
+            .filter(|m| predicate(m))
+            .cloned()
+            .collect();
+        Ok(filtered_records)
+    }
+
     pub(crate) fn count(&self) -> Result<usize, JoydbError> {
         Ok(self.records.len())
     }
@@ -159,7 +173,7 @@ mod tests {
     }
 
     fn sample_posts() -> Vec<Post> {
-        vec![first_post(), second_post()]
+        vec![first_post(), second_post(), third_post()]
     }
 
     fn first_post() -> Post {
@@ -173,6 +187,13 @@ mod tests {
         Post {
             id: 2,
             title: "Second".to_string(),
+        }
+    }
+
+    fn third_post() -> Post {
+        Post {
+            id: 3,
+            title: "Third".to_string(),
         }
     }
 
@@ -196,7 +217,7 @@ mod tests {
             let json = serde_json::to_string(&relation).unwrap();
             assert_eq!(
                 json,
-                r#"[{"id":1,"title":"First"},{"id":2,"title":"Second"}]"#
+                r#"[{"id":1,"title":"First"},{"id":2,"title":"Second"},{"id":3,"title":"Third"}]"#
             );
         }
 
@@ -237,7 +258,7 @@ mod tests {
         #[test]
         fn should_insert_new_record_and_mark_dirty() {
             let mut relation = sample_relation();
-            assert_eq!(relation.records.len(), 2);
+            assert_eq!(relation.records.len(), 3);
             assert_eq!(relation.meta.is_dirty, false);
 
             let post = Post {
@@ -246,8 +267,8 @@ mod tests {
             };
             relation.insert(&post).unwrap();
 
-            assert_eq!(relation.records.len(), 3);
-            assert_eq!(relation.records[2], post);
+            assert_eq!(relation.records.len(), 4);
+            assert_eq!(relation.records[3], post);
             assert_eq!(relation.meta.is_dirty, true);
         }
 
@@ -313,7 +334,7 @@ mod tests {
         fn should_return_number_of_records() {
             let relation = sample_relation();
             let count = relation.count().unwrap();
-            assert_eq!(count, 2);
+            assert_eq!(count, 3);
         }
     }
 
@@ -357,7 +378,7 @@ mod tests {
             let id = 1;
             let deleted_post = relation.delete(&id).unwrap().unwrap();
 
-            assert_eq!(relation.records.len(), 1);
+            assert_eq!(relation.records.len(), 2);
             assert_eq!(relation.records[0], second_post());
             assert_eq!(relation.meta.is_dirty, true);
             assert_eq!(deleted_post, first_post());
@@ -369,7 +390,7 @@ mod tests {
             let id = 555;
             let maybe_post = relation.delete(&id).unwrap();
             assert!(maybe_post.is_none());
-            assert_eq!(relation.records.len(), 2);
+            assert_eq!(relation.records.len(), 3);
             assert_eq!(relation.meta.is_dirty, false);
         }
     }

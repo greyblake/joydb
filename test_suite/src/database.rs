@@ -13,6 +13,7 @@ pub struct Post {
 pub struct User {
     pub id: Uuid,
     pub name: String,
+    pub age: u8,
 }
 
 define_state! {

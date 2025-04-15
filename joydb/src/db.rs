@@ -15,12 +15,12 @@ use std::time::Duration;
 ///
 /// # CRUD operations
 ///
-/// | Operation | Methods                                                                |
-/// |-----------|------------------------------------------------------------------------|
-/// | Create    | [`insert`](Self::insert)                                               |
-/// | Read      | [`get`](Self::get), [`get_all`](Self::get_all), [`count`](Self::count) |
-/// | Update    | [`update`](Self::update)                                               |
-/// | Delete    | [`delete`](Self::delete)                                               |
+/// | Operation | Methods                                                                                                 |
+/// |-----------|---------------------------------------------------------------------------------------------------------|
+/// | Create    | [`insert`](Self::insert)                                                                                |
+/// | Read      | [`get`](Self::get), [`get_all`](Self::get_all), [`get_all_by`](Self::get_all_by) [`count`](Self::count) |
+/// | Update    | [`update`](Self::update)                                                                                |
+/// | Delete    | [`delete`](Self::delete)                                                                                |
 ///
 #[derive(Debug)]
 pub struct Joydb<S: State, A: Adapter> {
@@ -115,7 +115,7 @@ impl<S: State, A: Adapter> Joydb<S, A> {
     }
 
     /// Returns all records that corresponds to the model type.
-    /// The order of the records is the same as they were inserted.
+    /// The order of the records is not guaranteed and is a subject to change in the future versions.
     ///
     /// # Complexity
     /// O(n)
@@ -127,6 +127,16 @@ impl<S: State, A: Adapter> Joydb<S, A> {
         S: GetRelation<M>,
     {
         self.inner.lock().unwrap().get_all()
+    }
+
+    /// Return all records that match the predicate.
+    pub fn get_all_by<M, F>(&self, predicate: F) -> Result<Vec<M>, JoydbError>
+    where
+        M: Model,
+        S: GetRelation<M>,
+        F: Fn(&M) -> bool,
+    {
+        self.inner.lock().unwrap().get_all_by(predicate)
     }
 
     /// Returns the number of records that corresponds to the model type.
@@ -262,6 +272,17 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         relation.get_all()
     }
 
+    /// Return all records that match the predicate.
+    pub(crate) fn get_all_by<M, F>(&self, predicate: F) -> Result<Vec<M>, JoydbError>
+    where
+        M: Model,
+        S: GetRelation<M>,
+        F: Fn(&M) -> bool,
+    {
+        let relation = self.get_relation::<M>();
+        relation.get_all_by(predicate)
+    }
+
     pub fn count<M: Model>(&self) -> Result<usize, JoydbError>
     where
         S: GetRelation<M>,
@@ -364,6 +385,7 @@ impl<A: Adapter> JoydbMode<A> {
 
 /// Spawns a thread that periodically flushes the database.
 /// The thread owns a weak reference to the database, and runs until the database is dropped.
+/// This is used only when the [SyncPolicy] is set to [`Periodic`](SyncPolicy::Periodic).
 fn spawn_periodic_sync_thread<S: State, A: Adapter>(
     interval: Duration,
     weak_inner_db: std::sync::Weak<Mutex<InnerJoydb<S, A>>>,
