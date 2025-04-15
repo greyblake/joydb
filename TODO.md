@@ -29,7 +29,7 @@ let adult_users: Vec<User> = db.xxx::<User>(|user| user.age >= 18)?;
 
 ### Improvements
 - [ ] Finalize naming of the methods
-- [ ] Rename `GetRelation` to something else?
+- [x] Rename `GetRelation` to something else? (NO, leave it as it is)
 - [ ] Address all TODOs
 - [ ] Refine error variants
 - [ ] Replace `Serialize` with `Write`. Add extra information to the error (what exactly caused the problem?)

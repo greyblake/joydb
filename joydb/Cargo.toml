@@ -1,6 +1,6 @@
 [package]
 name = "joydb"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 authors = ["Serhii Potapov <blake131313@gmail.com>"]
 
@@ -16,7 +16,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-joydb_macros = { path = "../joydb_macros", version = "0.0.3" }
+joydb_macros = { path = "../joydb_macros", version = "0.0.4" }
 serde = { version = "1.0" }
 thiserror = "2.0"
 

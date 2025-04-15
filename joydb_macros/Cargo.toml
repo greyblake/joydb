@@ -1,6 +1,6 @@
 [package]
 name = "joydb_macros"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 description = "An in-memory embedded database with persistence and multiple adapters (JSON, CSV, etc). Acts like a minimalistic ORM with zero setup. Simple, lightweight, and perfect for prototypes, small apps, or experiments."
 keywords = ["database", "ORM", "JSON", "embedded", "file"]
