@@ -19,7 +19,7 @@
 ### CRUD methods:
 - [x] Rename `find` to `get`
 - [x] Rename `all` -> `get_all`
-- [ ] Implement `get_all_by()`
+- [x] Implement `get_all_by()`
 - [ ] delete_all_by(predicate) -> Vec<M>
 - [ ] upsert(&M)
 
@@ -44,8 +44,8 @@ let adult_users: Vec<User> = db.xxx::<User>(|user| user.age >= 18)?;
 - [ ] Documentation for every public item
 - [ ] Documentation in lib.rs
 - [ ] Documentation in README
-- [ ] Proper Cargo.toml: description, tags, keywords, etc.
-- [ ] Come with a logo
+- [x] Proper Cargo.toml: description, tags, keywords, etc.
+- [x] Come with a logo
 
 ### Further ideas
 
