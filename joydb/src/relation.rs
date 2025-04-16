@@ -91,11 +91,12 @@ impl<M: Model> Relation<M> {
         Ok(self.records.len())
     }
 
-    pub(crate) fn update(&mut self, new_model: M) -> Result<(), JoydbError> {
-        let id = new_model.id();
+    // TODO: pass reference, must be consistent with `insert()`
+    pub(crate) fn update(&mut self, new_record: M) -> Result<(), JoydbError> {
+        let id = new_record.id();
 
         if let Some(m) = self.records.iter_mut().find(|m| m.id() == id) {
-            *m = new_model;
+            *m = new_record;
             self.meta.is_dirty = true;
             Ok(())
         } else {
@@ -104,6 +105,18 @@ impl<M: Model> Relation<M> {
                 model_name: M::relation_name().to_owned(),
             })
         }
+    }
+
+    pub(crate) fn upsert(&mut self, record: &M) -> Result<(), JoydbError> {
+        let target_id = record.id();
+        let maybe_target_record = self.records.iter_mut().find(|m| m.id() == target_id);
+        if let Some(target_record) = maybe_target_record {
+            *target_record = record.clone();
+        } else {
+            self.records.push(record.clone());
+        }
+        self.meta.is_dirty = true;
+        Ok(())
     }
 
     pub(crate) fn delete(&mut self, id: &M::Id) -> Result<Option<M>, JoydbError> {
@@ -445,6 +458,41 @@ mod tests {
 
             assert_eq!(relation.records.len(), 3);
             assert_eq!(relation.meta.is_dirty, false);
+        }
+    }
+
+    mod upsert {
+        use super::*;
+
+        #[test]
+        fn should_add_new_record_if_does_not_exist_yet() {
+            let mut relation = sample_relation();
+            assert_eq!(relation.records.len(), 3);
+
+            let post44 = Post {
+                id: 44,
+                title: "Forty Four".to_string(),
+            };
+            relation.upsert(&post44).unwrap();
+
+            assert_eq!(relation.records.len(), 4);
+            assert_eq!(relation.records[3], post44);
+        }
+
+        #[test]
+        fn should_update_existing_record_matched_by_id() {
+            let mut relation = sample_relation();
+            assert_eq!(relation.records.len(), 3);
+
+            let updated_post2 = Post {
+                id: 2,
+                title: "Updated Second!!!".to_string(),
+            };
+
+            relation.upsert(&updated_post2).unwrap();
+
+            assert_eq!(relation.records.len(), 3);
+            assert_eq!(relation.get(&2).unwrap(), Some(updated_post2));
         }
     }
 

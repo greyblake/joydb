@@ -17,9 +17,9 @@ use std::time::Duration;
 ///
 /// | Operation | Methods                                                                                                  |
 /// |-----------|----------------------------------------------------------------------------------------------------------|
-/// | Create    | [`insert`](Self::insert)                                                                                 |
+/// | Create    | [`insert`](Self::insert), [`upsert`](Self::upsert)                                                       |
 /// | Read      | [`get`](Self::get), [`get_all`](Self::get_all), [`get_all_by`](Self::get_all_by), [`count`](Self::count) |
-/// | Update    | [`update`](Self::update)                                                                                 |
+/// | Update    | [`update`](Self::update), [`upsert`](Self::upsert)                                                       |
 /// | Delete    | [`delete`](Self::delete), [`delete_all_by`](Self::delete_all_by)                                         |
 ///
 #[derive(Debug)]
@@ -167,6 +167,16 @@ impl<S: State, A: Adapter> Joydb<S, A> {
         self.inner.lock().unwrap().update(new_model)
     }
 
+    /// Upserts a record.
+    /// If the record with the same id already exists, it will be updated.
+    /// Otherwise, it will be inserted.
+    pub fn upsert<M: Model>(&self, record: &M) -> Result<(), JoydbError>
+    where
+        S: GetRelation<M>,
+    {
+        self.inner.lock().unwrap().upsert(record)
+    }
+
     pub fn delete<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
     where
         S: GetRelation<M>,
@@ -307,6 +317,16 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
     {
         let relation = self.get_relation_mut::<M>();
         relation.update(new_model)?;
+        self.after_change()?;
+        Ok(())
+    }
+
+    fn upsert<M: Model>(&mut self, record: &M) -> Result<(), JoydbError>
+    where
+        S: GetRelation<M>,
+    {
+        let relation = self.get_relation_mut::<M>();
+        relation.upsert(record)?;
         self.after_change()?;
         Ok(())
     }

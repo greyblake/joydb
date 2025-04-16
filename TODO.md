@@ -20,8 +20,8 @@
 - [x] Rename `find` to `get`
 - [x] Rename `all` -> `get_all`
 - [x] Implement `get_all_by()`
-- [ ] delete_all_by(predicate) -> Vec<M>
-- [ ] upsert(&M)
+- [x] delete_all_by(predicate) -> Vec<M>
+- [x] upsert(&M)
 
 
 ### Improvements

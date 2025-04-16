@@ -163,7 +163,6 @@ fn should_delete_all_records_that_match_predicate() {
         };
         db.insert(&bob).unwrap();
 
-
         let deleted_users = db.delete_all_by(|u: &User| u.age > 27).unwrap();
         assert_eq!(deleted_users.len(), 1);
         assert_eq!(deleted_users[0].name, "Alice");
@@ -172,4 +171,53 @@ fn should_delete_all_records_that_match_predicate() {
         assert_eq!(remaining_users.len(), 1);
         assert_eq!(remaining_users[0].name, "Bob");
     });
+}
+
+mod upsert {
+    use super::*;
+
+    #[test]
+    fn should_insert_if_record_does_not_exist() {
+        with_open_db(|db| {
+            assert_eq!(db.count::<User>().unwrap(), 0);
+
+            let alice = User {
+                id: Uuid::new_v4(),
+                name: "Alice".to_string(),
+                age: 30,
+            };
+            db.upsert(&alice).unwrap();
+
+            let alice = db.get::<User>(&alice.id).unwrap().unwrap();
+            assert_eq!(alice.name, "Alice");
+        });
+    }
+
+    #[test]
+    fn should_update_if_record_with_matching_id_exists() {
+        with_open_db(|db| {
+            let alice_id = Uuid::new_v4();
+            // Setup
+            {
+                let alice = User {
+                    id: alice_id,
+                    name: "Alice".to_string(),
+                    age: 30,
+                };
+                db.insert(&alice).unwrap();
+            }
+
+            // Update
+            {
+                let mut alice = db.get::<User>(&alice_id).unwrap().unwrap();
+                assert_eq!(alice.name, "Alice");
+
+                alice.name = "Alice Updated".to_string();
+                db.upsert(&alice).unwrap();
+
+                let fetched_alice = db.get::<User>(&alice_id).unwrap().unwrap();
+                assert_eq!(fetched_alice.name, "Alice Updated");
+            }
+        });
+    }
 }
