@@ -4,6 +4,12 @@
 //! Joydb is a Rust library that acts like a database and ORM at the same time and provides a simple way to store and retrieve data in JSON, CSV or any other format.
 //!
 //! # Getting started
+//! Install prerequisites:
+//!
+//! ```sh
+//! cargo install serde --features derive
+//! cargo install joydb --features json
+//! ```
 //!
 //! ```
 //! # let _ = ::std::fs::remove_file("data.json");
@@ -11,7 +17,7 @@
 //! use joydb::{Joydb, adapters::JsonAdapter, Model};
 //! use serde::{Serialize, Deserialize};
 //!
-//! // Describe your model
+//! // Define your model
 //! #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 //! struct User {
 //!     // id is mandatory field for every model.
@@ -57,6 +63,7 @@
 //! | Delete    | [`delete`](Joydb::delete), [`delete_all_by`](Joydb::delete_all_by)                                           |
 //!
 //! Please refer to [Joydb] for more details.
+//!
 //! # Adapters
 //!
 //! There are 2 types of adapters:
@@ -81,6 +88,13 @@
 //!
 //! Please see [SyncPolicy] for more details.
 //!
+//! # Motivation
+//!
+//! While prototyping new projects, I often needed some form of persistent storage.
+//! However, setting up a full-fledged database and ORM felt like overkill for the project's scope.
+//! So I'd occasionally fall back to a simple JSON file.
+//! As this pattern repeated, I decided to solve the problem once and for all by building Joydb.
+//!
 //! # Limitation
 //!
 //! Joydb is designed in the way that it writes the entire database state to a file
@@ -89,6 +103,10 @@
 //!
 //! It's highly recommended to switch to a proper database like PostgreSQL before Joydb turns into
 //! Paindb.
+//!
+//! # License
+//!
+//! MIT © [Serhii Potapov](https://www.greyblake.com)
 
 pub mod adapters;
 mod db;
