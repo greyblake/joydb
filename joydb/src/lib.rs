@@ -14,10 +14,10 @@
 //! // Describe your model
 //! #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 //! struct User {
-//!     // id is mandatory field for every model
+//!     // id is mandatory field for every model.
+//!     // We use integer here, but most likely you will want to use Uuid.
 //!     id: u32,
 //!     username: String,
-//!     age: u32,
 //! }
 //!
 //! // Define the state
@@ -35,27 +35,49 @@
 //! let alice = User {
 //!    id: 1,
 //!    username: "Alice".to_string(),
-//!    age: 30,
 //! };
 //!
 //! // Insert a new user
 //! db.insert(&alice).unwrap();
 //!
 //! // Get the user by ID
-//! let fetched_user = db.get::<User>(&1).unwrap().unwrap();
-//! assert_eq!(fetched_user.username, "Alice");
+//! let user = db.get::<User>(&1).unwrap().unwrap();
+//! assert_eq!(user.username, "Alice");
 //!
 //! # let _ = ::std::fs::remove_file("data.json");
 //! ```
 //!
 //! # CRUD operations
 //!
-//! [Joydb] provides all the regular CRUD operations.
+//! | Operation | Methods                                                                                                      |
+//! |-----------|--------------------------------------------------------------------------------------------------------------|
+//! | Create    | [`insert`](Joydb::insert), [`upsert`](Joydb::upsert)                                                         |
+//! | Read      | [`get`](Joydb::get), [`get_all`](Joydb::get_all), [`get_all_by`](Joydb::get_all_by), [`count`](Joydb::count) |
+//! | Update    | [`update`](Joydb::update), [`upsert`](Joydb::upsert)                                                         |
+//! | Delete    | [`delete`](Joydb::delete), [`delete_all_by`](Joydb::delete_all_by)                                           |
+//!
 //! Please refer to [Joydb] for more details.
+//! # Adapters
+//!
+//! There are 2 types of adapters:
+//!
+//! - _Unified_ - uses a single file to store the state. It writes and reads the entire state at once. Usually requires a file path.
+//! - _Partitioned_ - uses multiple files to store the state. It writes and reads each relation separately. Usually requires directory path.
+//!
+//! The following adapters are implemented out of the box and can be used with the corresponding
+//! feature flag enabled.
+//!
+//! | Adapter                                                           | Format | Type        | Feature flag |
+//! | ----------------------------------------------------------------- | ------ | ----------- | ------------ |
+//! | [JsonAdapter](crate::adapters::JsonAdapter)                       | JSON   | Unified     | `json`       |
+//! | [JsonPartitionedAdapter](crate::adapters::JsonPartitionedAdapter) | JSON   | Partitioned | `json`       |
+//! | [RonAdapter](crate::adapters::RonAdapter)                         | RON    | Unified     | `ron`        |
+//! | [RonPartitionedAdapter](crate::adapters::RonPartitionedAdapter)   | RON    | Partitioned | `ron`        |
+//! | [CsvAdapter](crate::adapters::CsvAdapter)                         | CSV    | Paritioned  | `csv`        |
 //!
 //! # Sync policy
 //!
-//! Sync policy defines when exactly data must be written to the file system.
+//! Sync policy defines when exactly the data must be written to the file system.
 //!
 //! Please see [SyncPolicy] for more details.
 //!

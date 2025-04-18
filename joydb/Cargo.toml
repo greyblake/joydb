@@ -1,6 +1,6 @@
 [package]
 name = "joydb"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2024"
 authors = ["Serhii Potapov <blake131313@gmail.com>"]
 
@@ -13,10 +13,13 @@ homepage = "https://github.com/greyblake/joydb"
 documentation = "https://docs.rs/joydb"
 readme = "README.md"
 
+[package.metadata.docs.rs]
+all-features = true
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-joydb_macros = { path = "../joydb_macros", version = "0.0.5" }
+joydb_macros = { path = "../joydb_macros", version = "0.0.6" }
 serde = { version = "1.0" }
 thiserror = "2.0"
 
@@ -33,3 +36,4 @@ ron = ["dep:ron"]
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }
+
