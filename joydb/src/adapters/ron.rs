@@ -91,7 +91,7 @@ impl RonPartitionedAdapter {
     }
 
     fn relation_file_path<M: Model>(&self) -> PathBuf {
-        self.dir_path.join(format!("{}.ron", M::relation_name()))
+        self.dir_path.join(format!("{}.ron", M::model_name()))
     }
 }
 

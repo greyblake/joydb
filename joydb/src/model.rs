@@ -7,5 +7,5 @@ pub trait Model: Clone + Serialize + for<'de> Deserialize<'de> {
 
     fn id(&self) -> &Self::Id;
 
-    fn relation_name() -> &'static str;
+    fn model_name() -> &'static str;
 }

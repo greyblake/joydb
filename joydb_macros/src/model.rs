@@ -67,7 +67,7 @@ fn gen_derive_model(model: &Model) -> TokenStream {
                 &self.#id_field_name                //         &self.id
             }                                       //     }
                                                     //
-            fn relation_name() -> &'static str {    //     fn relation_name() -> &'static str {
+            fn model_name() -> &'static str {       //     fn model_name() -> &'static str {
                 #type_name_str                      //         "User"
             }                                       //     }
         }                                           // }

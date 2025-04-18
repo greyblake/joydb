@@ -24,7 +24,7 @@ impl CsvAdapter {
     }
 
     fn relation_file_path<M: Model>(&self) -> PathBuf {
-        self.dir_path.join(format!("{}.csv", M::relation_name()))
+        self.dir_path.join(format!("{}.csv", M::model_name()))
     }
 }
 

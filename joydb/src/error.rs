@@ -3,12 +3,15 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum JoydbError {
+    /// File system related error.
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// A path expected to be a file, but it is not.
     #[error("{0} is not a file")]
     NotFile(PathBuf),
 
+    /// A path expected to be a directory, but it is not.
     #[error("{0} is not a directory")]
     NotDirectory(PathBuf),
 
@@ -24,16 +27,22 @@ pub enum JoydbError {
     Deserialize(Box<dyn std::error::Error + Send + Sync>),
 
     /// Error when trying to insert a model with an ID that already exists.
-    #[error("{model_name} with id = {id} already exists")]
+    #[error("{model} with id = {id} already exists")]
     DuplicatedId {
         /// ID of the model formatted with `Debug`
         id: String,
         /// Name of the model (type name)
-        model_name: String,
+        model: String,
     },
 
-    #[error("{model_name} with id = {id} not found")]
-    NotFound { id: String, model_name: String },
+    /// Error when trying to update a model with an ID that does not exist.
+    #[error("{model} with id = {id} not found")]
+    NotFound {
+        /// ID of the model formatted with `Debug`
+        id: String,
+        /// Name of the model (type name)
+        model: String
+    },
 
     /// Custom error variant. Intended for third party adapters for situations
     /// when non of the existing variants are suitable.

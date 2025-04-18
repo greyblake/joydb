@@ -81,7 +81,7 @@ impl JsonPartitionedAdapter {
 
     /// Build the file path for the relation of a given model.
     fn relation_file_path<M: Model>(&self) -> PathBuf {
-        self.dir_path.join(format!("{}.json", M::relation_name()))
+        self.dir_path.join(format!("{}.json", M::model_name()))
     }
 }
 

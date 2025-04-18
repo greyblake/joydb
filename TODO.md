@@ -28,9 +28,7 @@
 - [x] Finalize naming of the methods
 - [x] Rename `GetRelation` to something else? (NO, leave it as it is)
 - [ ] Address all TODOs
-- [ ] Refine error variants
-- [ ] Replace `Serialize` with `Write`. Add extra information to the error (what exactly caused the problem?)
-- [ ] Replace `Deserialize` with `Read`. Add extra info.
+- [x] Refine error variants
 
 
 ### Setup CI

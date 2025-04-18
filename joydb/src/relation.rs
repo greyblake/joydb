@@ -55,7 +55,7 @@ impl<M: Model> Relation<M> {
         if is_duplicated {
             Err(JoydbError::DuplicatedId {
                 id: format!("{:?}", id),
-                model_name: M::relation_name().to_owned(),
+                model: M::model_name().to_owned(),
             })
         } else {
             self.records.push(record.clone());
@@ -101,7 +101,7 @@ impl<M: Model> Relation<M> {
         } else {
             Err(JoydbError::NotFound {
                 id: format!("{:?}", id),
-                model_name: M::relation_name().to_owned(),
+                model: M::model_name().to_owned(),
             })
         }
     }
@@ -199,7 +199,7 @@ mod tests {
             &self.id
         }
 
-        fn relation_name() -> &'static str {
+        fn model_name() -> &'static str {
             "Post"
         }
     }
