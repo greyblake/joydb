@@ -47,12 +47,6 @@ use std::path::Path;
 
 mod fs_utils;
 
-// ------- ABSTRACTIONS --------- //
-
-// TODO: Write a blog article about this workaround.
-// See: https://users.rust-lang.org/t/two-blanket-implementations-for-different-classes-of-objects/100173
-// See example: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=db5ee78e4307b2ae4c1d113d0e39a6f2
-
 /// A trait that every adapter must implement.
 /// Adapter determines how to write and how to load the state from the file system
 /// (or any other storage).

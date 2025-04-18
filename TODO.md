@@ -27,7 +27,7 @@
 ### Improvements
 - [x] Finalize naming of the methods
 - [x] Rename `GetRelation` to something else? (NO, leave it as it is)
-- [ ] Address all TODOs
+- [x] Address all TODOs
 - [x] Refine error variants
 
 
@@ -36,8 +36,8 @@
 
 
 ### Documentation
-- [ ] Documentation for every public item
-- [ ] Documentation in lib.rs
+- [x] Documentation for every public item
+- [x] Documentation in lib.rs
 - [ ] Documentation in README
 - [x] Proper Cargo.toml: description, tags, keywords, etc.
 - [x] Come with a logo

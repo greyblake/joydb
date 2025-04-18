@@ -13,6 +13,9 @@ use std::time::Duration;
 /// A struct that represents a database.
 /// It's thread-safe and can be shared between multiple threads.
 ///
+/// Essentially the database is a combination of a state that needs to be persisted and an
+/// adapter that is used to persist/load the state.
+///
 /// # CRUD operations
 ///
 /// | Operation | Methods                                                                                                  |
@@ -38,11 +41,8 @@ impl<S: State, A: Adapter> Clone for Joydb<S, A> {
 }
 
 impl<S: State, A: Adapter + FromPath> Joydb<S, A> {
-    /// Opens a database from the given file/directory path.
+    /// Opens a database from the given file or directory.
     /// If the database does not exist, it will be created.
-    ///
-    /// # Example
-    /// TODO example
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, JoydbError> {
         let adapter = A::from_path(path);
         let config = JoydbConfig {
@@ -85,12 +85,6 @@ impl<S: State, A: Adapter> Joydb<S, A> {
     ///
     /// # Errors
     /// Returns an error if the record with the same id already exists.
-    ///
-    /// # Complexity
-    /// O(n)
-    ///
-    /// # Example
-    /// TODO
     pub fn insert<M: Model>(&self, model: &M) -> Result<(), JoydbError>
     where
         S: GetRelation<M>,
@@ -100,13 +94,6 @@ impl<S: State, A: Adapter> Joydb<S, A> {
 
     /// Finds a record by its id.
     /// Returns `None` if the record is not found.
-    ///
-    /// # Complexity
-    /// O(n)
-    ///
-    /// # Example
-    ///
-    /// TODO
     pub fn get<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
     where
         S: GetRelation<M>,
@@ -116,12 +103,6 @@ impl<S: State, A: Adapter> Joydb<S, A> {
 
     /// Returns all records that corresponds to the model type.
     /// The order of the records is not guaranteed and is a subject to change in the future versions.
-    ///
-    /// # Complexity
-    /// O(n)
-    ///
-    /// # Example
-    /// TODO
     pub fn get_all<M: Model>(&self) -> Result<Vec<M>, JoydbError>
     where
         S: GetRelation<M>,
@@ -141,18 +122,11 @@ impl<S: State, A: Adapter> Joydb<S, A> {
 
     /// Returns the number of records that corresponds to the model type.
     ///
-    /// # Complexity
-    /// O(1)
-    ///
     /// # Errors
     ///
     /// No real errors are expected to happen.
     /// However, `Result<usize, JoydbError>` is used to keep the API consistent with other methods
     /// and to make the user treat interaction with the database as fallible operations.
-    ///
-    /// # Example
-    /// TODO
-    ///
     pub fn count<M: Model>(&self) -> Result<usize, JoydbError>
     where
         S: GetRelation<M>,
@@ -177,6 +151,8 @@ impl<S: State, A: Adapter> Joydb<S, A> {
         self.inner.lock().unwrap().upsert(record)
     }
 
+    /// Deletes a record by its id and returns the deleted record.
+    /// If the record is not found, it returns `None`.
     pub fn delete<M: Model>(&self, id: &M::Id) -> Result<Option<M>, JoydbError>
     where
         S: GetRelation<M>,
@@ -185,6 +161,7 @@ impl<S: State, A: Adapter> Joydb<S, A> {
     }
 
     /// Deletes all records that match the predicate.
+    /// Returns the deleted records.
     pub fn delete_all_by<M, F>(&self, predicate: F) -> Result<Vec<M>, JoydbError>
     where
         M: Model,
