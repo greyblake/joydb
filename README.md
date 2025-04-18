@@ -8,6 +8,12 @@
 </p>
 <h2 align="center">JSON/CSV file database and ORM for quick prototyping.</h2>
 
+
+<p align="center">
+<a href="https://github.com/greyblake/joydb/actions/workflows/ci.yml" rel="nofollow"><img src="https://github.com/greyblake/joydb/actions/workflows/ci.yml/badge.svg" alt="Nutype Build Status"></a>
+<a href="https://docs.rs/joydb" rel="nofollow"><img src="https://docs.rs/joydb/badge.svg" alt="Joydb Documentation"></a>
+<p>
+
 An in-memory embedded database with persistence and multiple adapters.
 Acts like a minimalistic ORM.
 Good for prototypes and quick experiments.
