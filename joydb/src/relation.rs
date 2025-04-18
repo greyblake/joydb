@@ -2,12 +2,17 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{JoydbError, Model};
 
+/// A relation is a collection of records of a particular model and some metadata.
+/// associated with the relation.
+///
+/// Relation also implements typical CRUD operations, which are used by the database.
 #[derive(Debug)]
 pub struct Relation<M: Model> {
-    // We ignore meta while serializing and deserializing.
+    /// Metadata for the relation.
+    /// This is not serialized or persisted. They meant to exist only in memory.
     pub(crate) meta: RelationMeta,
 
-    // The actual records in the relation.
+    /// The records in the relation.
     pub(crate) records: Vec<M>,
 }
 
@@ -21,13 +26,18 @@ where
 }
 
 impl<M: Model> Relation<M> {
-    pub fn new() -> Self {
+    /// Creates a new empty relation.
+    pub(crate) fn new() -> Self {
         Relation {
             meta: RelationMeta::default(),
             records: Vec::new(),
         }
     }
 
+    /// Creates a new relation with the given records.
+    ///
+    /// It needs to be public, since it may be used by custom partitioned adapters (.e.g
+    /// [crate::adapters::CsvAdapter] uses it).
     pub fn new_with_records(records: Vec<M>) -> Self {
         Relation {
             meta: RelationMeta::default(),
@@ -35,10 +45,16 @@ impl<M: Model> Relation<M> {
         }
     }
 
+    /// Is there any unsaved changes?
+    ///
+    /// It needs to be public, since it's invoked by the code generated with [crate::state] macro.
     pub fn is_dirty(&self) -> bool {
         self.meta.is_dirty
     }
 
+    /// Resets the dirty flag to `false`.
+    ///
+    /// It needs to be public, since it's invoked by the code generated with [crate::state] macro.
     pub fn reset_dirty(&mut self) {
         self.meta.is_dirty = false;
     }

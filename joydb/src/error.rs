@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use thiserror::Error;
 
+/// Joydb error type.
 #[derive(Debug, Error)]
 pub enum JoydbError {
     /// File system related error.
@@ -41,7 +42,7 @@ pub enum JoydbError {
         /// ID of the model formatted with `Debug`
         id: String,
         /// Name of the model (type name)
-        model: String
+        model: String,
     },
 
     /// Custom error variant. Intended for third party adapters for situations

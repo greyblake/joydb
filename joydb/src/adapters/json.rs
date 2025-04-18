@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 
 use super::fs_utils;
 
+/// A JSON adapter.
+/// Stores the entire state in a single JSON file.
 pub struct JsonAdapter {
     /// Path to the JSON file where the state is stored.
     file_path: PathBuf,
@@ -57,6 +59,8 @@ impl Adapter for JsonAdapter {
     type Target = Unified<Self>;
 }
 
+/// A JSON partitioned adapter.
+/// Stores every relation in a separate JSON file.
 pub struct JsonPartitionedAdapter {
     /// Path to the directory where the partitioned JSON files are stored.
     dir_path: PathBuf,

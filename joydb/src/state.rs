@@ -3,16 +3,32 @@ use std::fmt::Debug;
 
 use crate::{JoydbError, Model, Relation, adapters::PartitionedAdapter};
 
+/// A trait that represents a state that can be (de)serialized to/from JSON or any other format
+/// supported by an adapter.
+///
+/// A state must be defined with the [state!](crate::state) macro.
 pub trait State: Default + Debug + Serialize + DeserializeOwned + Send + 'static {
+    /// Are there any unsaved changes in the state?
     fn is_dirty(&self) -> bool;
 
+    /// Reset the dirty flag to `false`.
     fn reset_dirty(&mut self);
 
+    /// For every dirty relation in the state, write the relation  using the given partitioned adapter.
+    ///
+    /// The method exists to facilitate work of partitioned adapters. Since partitioned adapters
+    /// cannot know which relations they need to work with, this method is essentially the bridge,
+    /// that calls [PartitionedAdapter::write_relation] for every dirty relation in the state.
     fn write_with_partitioned_adapter<PA: PartitionedAdapter>(
         &self,
         adapter: &PA,
     ) -> Result<(), crate::JoydbError>;
 
+    /// Load the entire state using the given partitioned adapter.
+    ///
+    /// The method exists to facilitate work of partitioned adapters. Since partitioned adapters
+    /// cannot know which relations they need to work with, this method is essentially the bridge,
+    /// that calls [PartitionedAdapter::load_relation] for every relation in the state.
     fn load_with_partitioned_adapter<PA: PartitionedAdapter>(
         adapter: &PA,
     ) -> Result<Self, JoydbError>;

@@ -1,3 +1,27 @@
+//! Common place for adapter abstractions and a few implementations.
+//!
+//! ## Unified VS Partitioned adapters
+//!
+//! There are 2 types of adapters:
+//!
+//! - _Unified_ - uses a single file to store the state. It writes and reads the entire state at once. Usually requires a file path.
+//! - _Partitioned_ - uses multiple files to store the state. It writes and reads each relation separately. Usually requires directory path.
+//!
+//! ## Supported adapters
+//!
+//! The following adapters are implemented out of the box and can be used with the corresponding
+//! feature flag enabled.
+//!
+//! | Adapter                  | Format | Type        | Feature flag |
+//! | ------------------------ | ------ | ----------- | ------------ |
+//! | [JsonAdapter]            | JSON   | Unified     | `json`       |
+//! | [JsonPartitionedAdapter] | JSON   | Partitioned | `json`       |
+//! | [RonAdapter]             | RON    | Unified     | `ron`        |
+//! | [RonPartitionedAdapter]  | RON    | Partitioned | `ron`        |
+//! | [CsvAdapter]             | CSV    | Paritioned  | `csv`        |
+//!
+//!
+
 #[cfg(feature = "csv")]
 mod csv;
 
@@ -29,25 +53,34 @@ mod fs_utils;
 // See: https://users.rust-lang.org/t/two-blanket-implementations-for-different-classes-of-objects/100173
 // See example: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=db5ee78e4307b2ae4c1d113d0e39a6f2
 
+/// A trait that every adapter must implement.
+/// Adapter determines how to write and how to load the state from the file system
+/// (or any other storage).
+///
+/// A concrete adapter must be implemented  either though [UnifiedAdapter] or [PartitionedAdapter].
 pub trait Adapter: Send + 'static {
     type Target: BlanketAdapter<Target = Self>;
 
+    /// Write the state to the file system or any other storage.
     fn write_state<S: State>(&self, state: &S) -> Result<(), JoydbError> {
         Self::Target::write_state(self, state)
     }
 
+    /// Load the state from the file system or any other storage.
     fn load_state<S: State>(&self) -> Result<S, JoydbError> {
         Self::Target::load_state(self)
     }
 }
 
+/// A tiny helper trait that allows to implement [Adapter] trait in terms of
+/// either [UnifiedAdapter] or [PartitionedAdapter] traits.
 pub trait BlanketAdapter {
     type Target;
     fn write_state<S: State>(target: &Self::Target, state: &S) -> Result<(), JoydbError>;
     fn load_state<S: State>(target: &Self::Target) -> Result<S, JoydbError>;
 }
 
-// Imlpement Adapter though UnifiedAdapter
+/// A utility struct that implements [BlanketAdapter] trait though in terms of [UnifiedAdapter].
 pub struct Unified<UA: UnifiedAdapter>(PhantomData<UA>);
 
 impl<UA: UnifiedAdapter> BlanketAdapter for Unified<UA> {
@@ -62,7 +95,7 @@ impl<UA: UnifiedAdapter> BlanketAdapter for Unified<UA> {
     }
 }
 
-// Implement Adapter though PartitionedAdapter
+/// A utility struct that implements [BlanketAdapter] trait though in terms of [PartitionedAdapter].
 pub struct Partitioned<PA: PartitionedAdapter>(PhantomData<PA>);
 
 impl<PA: PartitionedAdapter> BlanketAdapter for Partitioned<PA> {
@@ -96,11 +129,15 @@ pub trait UnifiedAdapter {
 ///
 /// But at the moment it's postponed.
 pub trait PartitionedAdapter {
+    /// Write a relation to a file system or any other storage.
     fn write_relation<M: Model>(&self, relation: &Relation<M>) -> Result<(), JoydbError>;
 
+    /// Load the entire state (all relations) using the given partitioned adapter.
     fn load_state<S: State>(&self) -> Result<S, JoydbError>;
 
-    // Is meant to be called by State, because State knows concrete type of M.
+    /// Load a relation from a file system or any other storage.
+    ///
+    /// It's meant to be called by implementation of [crate::State], because State knows concrete type of M.
     fn load_relation<M: Model>(&self) -> Result<Relation<M>, JoydbError>;
 }
 

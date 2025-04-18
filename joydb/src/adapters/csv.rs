@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 
 use super::{FromPath, fs_utils};
 
+/// A CSV adapter.
+/// Stores every relation in a separate CSV file.
 pub struct CsvAdapter {
     dir_path: PathBuf,
 }

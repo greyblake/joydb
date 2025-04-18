@@ -405,10 +405,16 @@ impl<A: Adapter> JoydbConfig<A> {
     }
 }
 
+/// The mode of the database.
+/// This is used to specify how the database should be opened.
 #[derive(Debug)]
 pub enum JoydbMode<A: Adapter> {
+    /// The data are flushed to the file system.
     Persistent {
+        /// The adapter used to read/write the data (e.g. JSON, CSV, etc.)
         adapter: A,
+
+        /// Specifies when data must be flushed to the file system.
         sync_policy: SyncPolicy,
     },
     /// The data are never flushed to the file system. Even when [Joydb::flush] is explicitly

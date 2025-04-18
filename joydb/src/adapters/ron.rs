@@ -8,6 +8,10 @@ use std::path::{Path, PathBuf};
 
 use super::fs_utils;
 
+/// A RON adapter.
+/// Stores the entire state in a single RON file.
+///
+/// For more information about RON (Rusty Object Notation), see [ron](https://docs.rs/ron/latest/ron/) crate.
 pub struct RonAdapter {
     file_path: PathBuf,
     pretty_config: Option<ron::ser::PrettyConfig>,
@@ -66,6 +70,10 @@ impl Adapter for RonAdapter {
     type Target = Unified<Self>;
 }
 
+/// A RON adapter.
+/// Stores every relation in a separate RON file.
+///
+/// For more information about RON (Rusty Object Notation), see [ron](https://docs.rs/ron/latest/ron/) crate.
 pub struct RonPartitionedAdapter {
     dir_path: PathBuf,
     pretty_config: Option<ron::ser::PrettyConfig>,
