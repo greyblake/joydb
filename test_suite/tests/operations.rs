@@ -83,7 +83,7 @@ fn should_update() {
             name: "Alice Updated".to_string(),
             age: 31,
         };
-        db.update(alice).unwrap();
+        db.update(&alice).unwrap();
 
         let alice = db.get::<User>(&alice_id).unwrap().unwrap();
         assert_eq!(alice.name, "Alice Updated");
@@ -101,7 +101,7 @@ fn should_return_error_on_update_if_record_does_not_exist() {
         };
         let alice_id = alice.id;
 
-        let err = db.update(alice).unwrap_err();
+        let err = db.update(&alice).unwrap_err();
         assert!(matches!(err, JoydbError::NotFound { .. }));
         assert_eq!(
             err.to_string(),
