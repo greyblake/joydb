@@ -34,6 +34,20 @@ pub trait GetRelation<M: Model> {
 /// ### Example
 ///
 /// ```
+/// # use serde::{Serialize, Deserialize};
+/// # use joydb::Model;
+///
+/// # #[derive(Debug, Clone, Serialize, Deserialize, Model)]
+/// # struct User {
+/// #    id: i32,
+/// # }
+///
+/// # #[derive(Debug, Clone, Serialize, Deserialize, Model)]
+/// # struct Post {
+/// #    id: i32,
+/// # }
+///
+///
 /// joydb::state! {
 ///    AppState,
 ///    models: [User, Post],
