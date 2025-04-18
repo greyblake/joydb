@@ -5,6 +5,8 @@ use std::path::Path;
 /// Safely writes `content` to `target_path` using the write-rename pattern.
 ///
 /// This function writes to a temporary file first, flushes it, then renames it atomically.
+// Some of the adapters which are behind feature gate may not use this function.
+#[allow(dead_code)]
 pub fn safe_write<P: AsRef<Path>>(target_path: P, content: &[u8]) -> io::Result<()> {
     let target_path = target_path.as_ref();
     let temp_path = target_path.with_extension("tmp");
