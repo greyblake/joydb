@@ -91,12 +91,11 @@ impl<M: Model> Relation<M> {
         Ok(self.records.len())
     }
 
-    // TODO: pass reference, must be consistent with `insert()`
-    pub(crate) fn update(&mut self, new_record: M) -> Result<(), JoydbError> {
+    pub(crate) fn update(&mut self, new_record: &M) -> Result<(), JoydbError> {
         let id = new_record.id();
 
         if let Some(m) = self.records.iter_mut().find(|m| m.id() == id) {
-            *m = new_record;
+            *m = new_record.clone();
             self.meta.is_dirty = true;
             Ok(())
         } else {
@@ -381,7 +380,7 @@ mod tests {
                 id: 2,
                 title: "Updated Second".to_string(),
             };
-            relation.update(new_post.clone()).unwrap();
+            relation.update(&new_post).unwrap();
 
             let updated_post = relation.get(&2).unwrap().unwrap();
             assert_eq!(updated_post, new_post);
@@ -395,7 +394,7 @@ mod tests {
                 id: 999,
                 title: "Updated Second".to_string(),
             };
-            let err = relation.update(new_post).unwrap_err();
+            let err = relation.update(&new_post).unwrap_err();
 
             assert!(matches!(err, JoydbError::NotFound { .. }));
             assert_eq!(err.to_string(), format!("Post with id = 999 not found"));

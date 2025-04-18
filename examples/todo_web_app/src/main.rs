@@ -92,7 +92,7 @@ async fn add_todo(State(db): State<Db>, Form(new_todo): Form<NewTodo>) -> impl I
 async fn toggle_todo(State(db): State<Db>, Path(id): Path<Uuid>) -> impl IntoResponse {
     if let Some(mut todo) = db.get::<Todo>(&id).unwrap() {
         todo.completed = !todo.completed;
-        db.update(todo).unwrap()
+        db.update(&todo).unwrap()
     }
 
     axum::response::Redirect::to("/")

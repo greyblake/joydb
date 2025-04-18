@@ -160,11 +160,11 @@ impl<S: State, A: Adapter> Joydb<S, A> {
         self.inner.lock().unwrap().count()
     }
 
-    pub fn update<M: Model>(&self, new_model: M) -> Result<(), JoydbError>
+    pub fn update<M: Model>(&self, new_record: &M) -> Result<(), JoydbError>
     where
         S: GetRelation<M>,
     {
-        self.inner.lock().unwrap().update(new_model)
+        self.inner.lock().unwrap().update(new_record)
     }
 
     /// Upserts a record.
@@ -311,12 +311,12 @@ impl<S: State, A: Adapter> InnerJoydb<S, A> {
         relation.count()
     }
 
-    fn update<M: Model>(&mut self, new_model: M) -> Result<(), JoydbError>
+    fn update<M: Model>(&mut self, new_record: &M) -> Result<(), JoydbError>
     where
         S: GetRelation<M>,
     {
         let relation = self.get_relation_mut::<M>();
-        relation.update(new_model)?;
+        relation.update(new_record)?;
         self.after_change()?;
         Ok(())
     }
