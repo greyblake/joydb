@@ -1,4 +1,4 @@
-use joydb::{Joydb, Model, adapters::JsonAdapter, define_state};
+use joydb::{Joydb, Model, adapters::JsonAdapter, state};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -16,7 +16,7 @@ pub struct User {
     pub age: u8,
 }
 
-define_state! {
+state! {
     DatabaseState,
     models: [User, Post],
 }

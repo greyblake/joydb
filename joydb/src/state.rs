@@ -29,9 +29,20 @@ pub trait GetRelation<M: Model> {
     fn get_relation(&self) -> &Relation<M>;
 }
 
-// TODO: rename define_state -> state! ?
+/// A macro to define a state struct that holds relations of models.
+///
+/// ### Example
+///
+/// ```
+/// joydb::state! {
+///    AppState,
+///    models: [User, Post],
+/// }
+/// ```
+///
+/// Where `User` and `Post` are models that implement the [Model] trait.
 #[macro_export]
-macro_rules! define_state {
+macro_rules! state {
     (
         $state_type:ident,
         models: [$(

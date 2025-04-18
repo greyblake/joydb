@@ -13,7 +13,7 @@ struct Post {
     title: String,
 }
 
-joydb::define_state! {
+joydb::state! {
     AppState,
     models: [User, Post],
 }

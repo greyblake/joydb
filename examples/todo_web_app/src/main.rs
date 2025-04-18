@@ -27,7 +27,7 @@ struct NewTodo {
     name: String,
 }
 
-joydb::define_state!(
+joydb::state!(
     DbState,
     models: [Todo],
 );

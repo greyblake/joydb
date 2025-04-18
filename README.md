@@ -41,7 +41,7 @@ struct Post {
 }
 
 // Define the state by listing the models
-joydb::define_state! {
+joydb::state! {
     AppState,
     models: [User, Post],
 }
